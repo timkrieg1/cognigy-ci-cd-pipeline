@@ -46,6 +46,7 @@ jobs:
       - name: Checkout current repository (CI/CD pipeline repo)
         uses: actions/checkout@v4
         with:
+          repository: timkrieg1/cognigy-ci-cd-pipeline
           path: pipeline-repo
 
       - name: Checkout calling repository (bot repo)
