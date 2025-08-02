@@ -115,8 +115,6 @@ jobs:
           MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
           RELEASE_DESCRIPTION: ${{ inputs.RELEASE_DESCRIPTION }}
           PYTHONUNBUFFERED: 1
-          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
-          REPOSITORY: ${{ inputs.REPOSITORY }}
         run: |
           # Convert string input to boolean for shell logic, but keep original for Python
           if [[ "${{ inputs.RUN_AUTOMATED_TEST }}" == "true" ]]; then
@@ -128,6 +126,7 @@ jobs:
           # Change to bot repository directory before running the script
           cd bot-repo
           python ../pipeline-repo/helper_files/extract_agent.py
+          
 
       - name: Install GitHub CLI
         run: sudo apt-get install gh
