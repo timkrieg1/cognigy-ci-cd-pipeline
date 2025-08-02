@@ -7,15 +7,15 @@ on:
         required: true
         type: string
       runAutomatedTest:
-        description: 'Run automated tests'
+        description: 'Run automated tests (true/false as string)'
         required: true
-        type: boolean
-        default: true
+        type: string
+        default: 'true'
       createPullRequest:
-        description: 'Create pull request automatically'
+        description: 'Create pull request automatically (true/false as string)'
         required: true
-        type: boolean
-        default: true
+        type: string
+        default: 'true'
       BOT_NAME:
         description: 'Bot name'
         required: true
@@ -50,9 +50,8 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Run Extraction Script
+      - name: Convert booleans and run Extraction Script
         env:
-          RUN_AUTOMATED_TEST: ${{ inputs.runAutomatedTest }}
           BOT_NAME: ${{ inputs.BOT_NAME }}
           COGNIGY_BASE_URL_DEV: ${{ vars.COGNIGY_BASE_URL_DEV }}
           COGNIGY_BASE_URL_TEST: ${{ vars.COGNIGY_BASE_URL_TEST }}
@@ -64,6 +63,12 @@ jobs:
           RELEASE_DESCRIPTION: ${{ inputs.releaseDescription }}
           PYTHONUNBUFFERED: 1
         run: |
+          # Convert string input to boolean for shell logic, but keep original for Python
+          if [[ "${{ inputs.runAutomatedTest }}" == "true" ]]; then
+            export RUN_AUTOMATED_TEST=true
+          else
+            export RUN_AUTOMATED_TEST=false
+          fi
           python helper_files/extract_agent.py
 
       - name: Install GitHub CLI
@@ -76,9 +81,8 @@ jobs:
         run: |
           # Create PR body by replacing placeholders
           PR_BODY=$(cat .github/pull_request_template.md)
-          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RUN_AUTOMATED_TEST/${{ github.event.inputs.runAutomatedTest }}/g")
-          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RELEASE_DESCRIPTION/${{ github.event.inputs.releaseDescription }}/g")
-          
+          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RUN_AUTOMATED_TEST/${{ inputs.runAutomatedTest }}/g")
+          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RELEASE_DESCRIPTION/${{ inputs.releaseDescription }}/g")
           gh pr create \
             --title "Pull Request on $(git rev-parse --abbrev-ref HEAD)" \
             --body "$PR_BODY" \
