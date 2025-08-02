@@ -20,6 +20,10 @@ on:
         description: 'Bot name'
         required: true
         type: string
+      BOT_MAPPING_ARTIFACT:
+        description: 'Path to the bot mapping file'
+        required: true
+        type: string
 permissions:
   contents: write
   pull-requests: write
@@ -32,7 +36,7 @@ jobs:
       - name: Download mapping.json
         uses: actions/download-artifact@v4
         with:
-          name: bot_mapping_file
+          name: ${{ inputs.BOT_MAPPING_ARTIFACT }}
           path: .
       - name: Checkout Repo
         uses: actions/checkout@v3
