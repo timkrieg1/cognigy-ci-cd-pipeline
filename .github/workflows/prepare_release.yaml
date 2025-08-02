@@ -2,6 +2,10 @@ name: Extract Cognigy Agent
 on:
   workflow_call:
     inputs:
+      REPOSITORY:
+        description: 'Repository name'
+        required: true
+        type: string
       RELEASE_DESCRIPTION:
         description: 'Release description'
         required: true
