@@ -1,4 +1,14 @@
 import functools
+from tqdm import tqdm
+import requests 
+import json 
+import os  
+import dotenv 
+from typing import List 
+import re  
+from datetime import datetime  
+import time  
+import base64
 
 # --- Decorator for retrying on 500 server errors ---
 def retry_on_500(max_retries=3, wait_seconds=5):
@@ -21,16 +31,6 @@ def retry_on_500(max_retries=3, wait_seconds=5):
                         raise
         return wrapper
     return decorator
-from tqdm import tqdm
-import requests 
-import json 
-import os  
-import dotenv 
-from typing import List 
-import re  
-from datetime import datetime  
-import time  
-import base64
 
 def clean_base_url(base_url: str) -> str:
     """
