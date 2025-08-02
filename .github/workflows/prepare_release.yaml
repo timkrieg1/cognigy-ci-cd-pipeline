@@ -2,16 +2,16 @@ name: Extract Cognigy Agent
 on:
   workflow_call:
     inputs:
-      releaseDescription:
+      RELEASE_DESCRIPTION:
         description: 'Release description'
         required: true
         type: string
-      runAutomatedTest:
+      RUN_AUTOMATED_TEST:
         description: 'Run automated tests (true/false as string)'
         required: true
         type: string
         default: 'true'
-      createPullRequest:
+      CREATE_PULL_REQUEST:
         description: 'Create pull request automatically (true/false as string)'
         required: true
         type: string
@@ -20,10 +20,16 @@ on:
         description: 'Bot name'
         required: true
         type: string
-      BOT_MAPPING_ARTIFACT:
-        description: 'Path to the bot mapping file'
+      BOT_MAPPING_BASE64:
+        description: 'Base64 encoded bot mapping file'
         required: true
         type: string
+
+    secrets:
+      PAT_TOKEN:
+        description: 'GitHub Personal Access Token for creating pull requests'
+        required: true
+
 permissions:
   contents: write
   pull-requests: write
@@ -33,23 +39,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Download mapping.json
-        uses: actions/download-artifact@v4
-        with:
-          name: ${{ inputs.BOT_MAPPING_ARTIFACT }}
-          path: .
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
       - name: Download requirements.txt artifact
         uses: actions/download-artifact@v4
         with:
           name: requirements_file
-          
+
       - name: Install Dependencies
         run: |
           pip install -r requirements.txt
@@ -64,11 +66,11 @@ jobs:
           COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
           COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
           MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
-          RELEASE_DESCRIPTION: ${{ inputs.releaseDescription }}
+          RELEASE_DESCRIPTION: ${{ inputs.RELEASE_DESCRIPTION }}
           PYTHONUNBUFFERED: 1
         run: |
           # Convert string input to boolean for shell logic, but keep original for Python
-          if [[ "${{ inputs.runAutomatedTest }}" == "true" ]]; then
+          if [[ "${{ inputs.RUN_AUTOMATED_TEST }}" == "true" ]]; then
             export RUN_AUTOMATED_TEST=true
           else
             export RUN_AUTOMATED_TEST=false
@@ -79,14 +81,14 @@ jobs:
         run: sudo apt-get install gh
 
       - name: Create Pull Request
-        if: ${{ inputs.createPullRequest == 'true' }}
+        if: ${{ inputs.CREATE_PULL_REQUEST == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Create PR body by replacing placeholders
           PR_BODY=$(cat .github/pull_request_template.md)
-          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RUN_AUTOMATED_TEST/${{ inputs.runAutomatedTest }}/g")
-          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RELEASE_DESCRIPTION/${{ inputs.releaseDescription }}/g")
+          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RUN_AUTOMATED_TEST/${{ inputs.RUN_AUTOMATED_TEST }}/g")
+          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RELEASE_DESCRIPTION/${{ inputs.RELEASE_DESCRIPTION }}/g")
           gh pr create \
             --title "Pull Request on $(git rev-parse --abbrev-ref HEAD)" \
             --body "$PR_BODY" \
