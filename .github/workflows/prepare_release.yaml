@@ -1,7 +1,6 @@
 name: Extract Cognigy Agent
-
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       releaseDescription:
         description: 'Release description'
@@ -17,7 +16,10 @@ on:
         required: true
         type: boolean
         default: true
-
+      BOT_NAME:
+        description: 'Bot name'
+        required: true
+        type: string
 permissions:
   contents: write
   pull-requests: write
@@ -46,8 +48,8 @@ jobs:
 
       - name: Run Extraction Script
         env:
-          RUN_AUTOMATED_TEST: ${{ github.event.inputs.runAutomatedTest }}
-          BOT_NAME: ${{ vars.BOT_NAME }}
+          RUN_AUTOMATED_TEST: ${{ inputs.runAutomatedTest }}
+          BOT_NAME: ${{ inputs.BOT_NAME }}
           COGNIGY_BASE_URL_DEV: ${{ vars.COGNIGY_BASE_URL_DEV }}
           COGNIGY_BASE_URL_TEST: ${{ vars.COGNIGY_BASE_URL_TEST }}
           COGNIGY_BASE_URL_PROD: ${{ vars.COGNIGY_BASE_URL_PROD }}
@@ -55,7 +57,7 @@ jobs:
           COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
           COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
           MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
-          RELEASE_DESCRIPTION: ${{ github.event.inputs.releaseDescription }}
+          RELEASE_DESCRIPTION: ${{ inputs.releaseDescription }}
           PYTHONUNBUFFERED: 1
         run: |
           python helper_files/extract_agent.py
@@ -64,7 +66,7 @@ jobs:
         run: sudo apt-get install gh
 
       - name: Create Pull Request
-        if: ${{ github.event.inputs.createPullRequest == 'true' }}
+        if: ${{ inputs.createPullRequest == 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

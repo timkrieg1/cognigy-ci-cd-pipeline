@@ -1,11 +1,11 @@
 name: Deploy Agent
-
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - agent/snapshot/**
+  workflow_call:
+    inputs:
+      BOT_NAME:
+        description: 'Bot name'
+        required: true
+        type: string
 
 jobs:
   post-merge:
@@ -33,7 +33,7 @@ jobs:
         env:
           COGNIGY_BASE_URL_PROD: ${{ vars.COGNIGY_BASE_URL_PROD }}
           COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
-          BOT_NAME: ${{ vars.BOT_NAME }}
+          BOT_NAME: ${{ inputs.BOT_NAME }}
           MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
 
         run: |
