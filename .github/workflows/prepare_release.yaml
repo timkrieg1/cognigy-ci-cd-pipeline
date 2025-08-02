@@ -43,22 +43,39 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout current repository (CI/CD pipeline repo)
         uses: actions/checkout@v4
+        with:
+          path: pipeline-repo
+
+      - name: Checkout calling repository (bot repo)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.REPOSITORY }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: bot-repo
+
+      - name: Decode and create bot_mappings.json
+        run: |
+          echo "${{ inputs.BOT_MAPPING_BASE64 }}" | base64 -d > bot-repo/bot_mappings.json
+          echo "Created bot_mappings.json in bot-repo directory:"
+          cat bot-repo/bot_mappings.json
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.10'
 
-      - name: Download requirements.txt artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: requirements_file
-
       - name: Install Dependencies
         run: |
-          pip install -r requirements.txt
+          pip install -r pipeline-repo/requirements.txt
+
+      - name: Configure Git for bot repository
+        run: |
+          cd bot-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
 
       - name: Convert booleans and run Extraction Script
         env:
@@ -72,6 +89,8 @@ jobs:
           MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
           RELEASE_DESCRIPTION: ${{ inputs.RELEASE_DESCRIPTION }}
           PYTHONUNBUFFERED: 1
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
+          REPOSITORY: ${{ inputs.REPOSITORY }}
         run: |
           # Convert string input to boolean for shell logic, but keep original for Python
           if [[ "${{ inputs.RUN_AUTOMATED_TEST }}" == "true" ]]; then
@@ -79,7 +98,10 @@ jobs:
           else
             export RUN_AUTOMATED_TEST=false
           fi
-          python helper_files/extract_agent.py
+          
+          # Change to bot repository directory before running the script
+          cd bot-repo
+          python ../pipeline-repo/helper_files/extract_agent.py
 
       - name: Install GitHub CLI
         run: sudo apt-get install gh
@@ -87,13 +109,17 @@ jobs:
       - name: Create Pull Request
         if: ${{ inputs.CREATE_PULL_REQUEST == 'true' }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
         run: |
+          cd bot-repo
+          
           # Create PR body by replacing placeholders
-          PR_BODY=$(cat .github/pull_request_template.md)
+          PR_BODY=$(cat ../.github/pull_request_template.md 2>/dev/null || echo "Automated PR created by CI/CD pipeline")
           PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RUN_AUTOMATED_TEST/${{ inputs.RUN_AUTOMATED_TEST }}/g")
           PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RELEASE_DESCRIPTION/${{ inputs.RELEASE_DESCRIPTION }}/g")
+          
           gh pr create \
+            --repo ${{ inputs.REPOSITORY }} \
             --title "Pull Request on $(git rev-parse --abbrev-ref HEAD)" \
             --body "$PR_BODY" \
             --base main \
