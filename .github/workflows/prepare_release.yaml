@@ -1,0 +1,81 @@
+name: Extract Cognigy Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseDescription:
+        description: 'Release description'
+        required: true
+        type: string
+      runAutomatedTest:
+        description: 'Run automated tests'
+        required: true
+        type: boolean
+        default: true
+      createPullRequest:
+        description: 'Create pull request automatically'
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  
+jobs:
+  extract-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download mapping.json
+        uses: actions/download-artifact@v4
+        with:
+          name: bot_mapping_file
+          path: .
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Extraction Script
+        env:
+          RUN_AUTOMATED_TEST: ${{ github.event.inputs.runAutomatedTest }}
+          BOT_NAME: ${{ vars.BOT_NAME }}
+          COGNIGY_BASE_URL_DEV: ${{ vars.COGNIGY_BASE_URL_DEV }}
+          COGNIGY_BASE_URL_TEST: ${{ vars.COGNIGY_BASE_URL_TEST }}
+          COGNIGY_BASE_URL_PROD: ${{ vars.COGNIGY_BASE_URL_PROD }}
+          COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
+          COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
+          COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
+          MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
+          RELEASE_DESCRIPTION: ${{ github.event.inputs.releaseDescription }}
+          PYTHONUNBUFFERED: 1
+        run: |
+          python helper_files/extract_agent.py
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh
+
+      - name: Create Pull Request
+        if: ${{ github.event.inputs.createPullRequest == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create PR body by replacing placeholders
+          PR_BODY=$(cat .github/pull_request_template.md)
+          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RUN_AUTOMATED_TEST/${{ github.event.inputs.runAutomatedTest }}/g")
+          PR_BODY=$(echo "$PR_BODY" | sed "s/PLACEHOLDER_RELEASE_DESCRIPTION/${{ github.event.inputs.releaseDescription }}/g")
+          
+          gh pr create \
+            --title "Pull Request on $(git rev-parse --abbrev-ref HEAD)" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$(git rev-parse --abbrev-ref HEAD)" \
+            --label "automated-test"

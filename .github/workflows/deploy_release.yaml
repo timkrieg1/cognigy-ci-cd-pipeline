@@ -1,0 +1,41 @@
+name: Deploy Agent
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - agent/snapshot/**
+
+jobs:
+  post-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download mapping.json
+        uses: actions/download-artifact@v4
+        with:
+          name: bot_mapping_file
+          path: .
+
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Deploy Agent
+        env:
+          COGNIGY_BASE_URL_PROD: ${{ vars.COGNIGY_BASE_URL_PROD }}
+          COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
+          BOT_NAME: ${{ vars.BOT_NAME }}
+          MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
+
+        run: |
+          python helper_files/deploy_agent.py
+
