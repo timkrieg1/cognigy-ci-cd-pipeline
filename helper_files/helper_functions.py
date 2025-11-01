@@ -795,7 +795,7 @@ class CognigyAPIClient:
             index = 0
             for job in ai_agent_data.get("jobs", []):
                 # --- Create subdirectory for each job ---
-                job_name = f"{job["config"]["name"]}_{index}"
+                job_name = f"{job['config']['name']}_{index}"
                 job_path = os.path.join(ai_agent_jobs_path, job_name)
                 os.makedirs(job_path, exist_ok=True)
                 # --- Create job config json ---
@@ -809,7 +809,7 @@ class CognigyAPIClient:
                 # --- Save each tool to a json file ---
                 tool_index = 0
                 for tool in job.get("tools", []):
-                    tool_file_path = os.path.join(job_tools_path, f"{tool["config"]["toolId"]}_{tool_index}.json")
+                    tool_file_path = os.path.join(job_tools_path, f"{tool['config']['toolId']}_{tool_index}.json")
                     with open(tool_file_path, "w", encoding="utf-8") as f:
                         json.dump(tool, f, indent=4, ensure_ascii=False)
 
