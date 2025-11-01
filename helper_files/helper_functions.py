@@ -388,7 +388,22 @@ class CognigyAPIClient:
 
         while True:
             response = self.session.post(download_link_url)
-            response.raise_for_status()
+            retries = 0
+            max_retries = 5
+            while retries < max_retries:
+                try:
+                    response.raise_for_status()
+                    break
+                except requests.exceptions.HTTPError as e:
+                    if response.status_code == 409:
+                        retries += 1
+                        print(f"Conflict error (409) encountered. Retrying {retries}/{max_retries} in 5 seconds...", flush=True)
+                        time.sleep(5)
+                    else:
+                        raise
+            else:
+                print("Max retries reached for 409 Conflict error. Raising exception.", flush=True)
+                raise
             download_link = response.json().get("downloadLink", "")
             print("Attempting to download snapshot...", flush=True)
 
@@ -548,7 +563,7 @@ class CognigyAPIClient:
             print("NLU connectors extraction complete.", flush=True)
         if len(ai_agent_ids) > 0:
             print(f"Extracting {len(ai_agent_ids)} AI agents...", flush=True)
-            self.extract_resource_data(ai_agent_ids, output_path="agent/aiagents", endpoint="aiagents")
+            self.extract_ai_agents(ai_agent_ids, output_path="agent/aiagents")
             print("AI agents extraction complete.", flush=True)
         if len(large_language_model_ids) > 0:
             print(f"Extracting {len(large_language_model_ids)} large language models...", flush=True)
@@ -737,7 +752,73 @@ class CognigyAPIClient:
                 with open(source_file_path, "w", encoding="utf-8") as f:
                     json.dump(source_data, f, indent=4, ensure_ascii=False)
 
+    @retry_on_500()
+    def extract_ai_agents(self, ai_agent_ids: list[str], output_path: str) -> None:
+        """
+        Extracts aiAgents and all jobs by their IDs and saves them to the specified output path.
 
+        Args:
+            ai_agent_ids (list[str]): List of aiAgent IDs to extract.
+            output_path (str): Directory path to save the aiAgent store data.
+        """
+
+        all_ai_agent_data = {}
+        # --- Iterate over aiAgents with progress bar for extraction ---
+        for ai_agent_id in tqdm(ai_agent_ids, desc="Extracting aiAgents", unit="aiAgent"):
+            r = self.session.get(
+                url=f"{self.base_url}/aiagents/{ai_agent_id}"
+            )
+            r.raise_for_status()
+            ai_agent_data = r.json()
+            all_ai_agent_data[ai_agent_data["name"]] = {"config": ai_agent_data}
+
+            # --- Fetch jobs for each aiAgent ---
+            r = self.session.get(
+                url=f"{self.base_url}/aiagents/{ai_agent_id}/jobs"
+            )
+            r.raise_for_status()
+            jobs = r.json()
+            all_ai_agent_data[ai_agent_data["name"]]["jobs"] = jobs
+            
+
+        os.makedirs(output_path, exist_ok=True)
+        for ai_agent_name, ai_agent_data in all_ai_agent_data.items():
+            # --- Save aiAgent config to json file ---
+            ai_agent_path = os.path.join(output_path, ai_agent_name)
+            os.makedirs(ai_agent_path, exist_ok=True)
+            with open(f"{ai_agent_path}/config.json", "w", encoding="utf-8") as f:
+                json.dump(ai_agent_data, f, indent=4, ensure_ascii=False)
+            # --- Create subdirectory for jobs ---
+            ai_agent_jobs_path = os.path.join(output_path, f"{ai_agent_name}", "jobs")
+            os.makedirs(ai_agent_jobs_path, exist_ok=True)
+            
+            index = 0
+            for job in ai_agent_data.get("jobs", []):
+                # --- Create subdirectory for each job ---
+                job_name = f"{job["config"]["name"]}_{index}"
+                job_path = os.path.join(ai_agent_jobs_path, job_name)
+                os.makedirs(job_path, exist_ok=True)
+                # --- Create job config json ---
+                job_config_file_path = os.path.join(job_path, "config.json")
+                with open(job_config_file_path, "w", encoding="utf-8") as f:
+                    json.dump(job["config"], f, indent=4, ensure_ascii=False)
+
+                # --- Create tools subdirectory ---
+                job_tools_path = os.path.join(job_path, "tools")
+                os.makedirs(job_tools_path, exist_ok=True)
+                # --- Save each tool to a json file ---
+                tool_index = 0
+                for tool in job.get("tools", []):
+                    tool_file_path = os.path.join(job_tools_path, f"{tool["config"]["toolId"]}_{tool_index}.json")
+                    with open(tool_file_path, "w", encoding="utf-8") as f:
+                        json.dump(tool, f, indent=4, ensure_ascii=False)
+
+                    tool_index += 1
+
+                index += 1
+
+
+    
     @retry_on_500()
     def deploy_agent(self) -> None:
         """
