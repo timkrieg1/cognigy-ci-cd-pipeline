@@ -37,6 +37,8 @@ with open("bot_mapping.json", "r") as f:
     bot_mappings = json.load(f)
 
 project_id_dev = bot_mappings["dev"]
+locales = bot_mappings["locales"]
+
 print(base_url_dev, api_key_dev, project_id_dev, bot_name, max_snapshots, branch_desc, locale)
 # --- Instantiate Cognigy Base Client ---
 CognigyAPIClientBase = CognigyAPIClient(
@@ -45,6 +47,7 @@ CognigyAPIClientBase = CognigyAPIClient(
     project_id=project_id_dev,
     bot_name=bot_name,
     max_snapshots=max_snapshots,
+    locales=locales
 )
 
 # --- Download snapshot from base environment ---
@@ -60,6 +63,7 @@ CognigyAPIClientBranch = CognigyAPIClient(
     project_id=dev_branch_agent_id,
     bot_name=f"Dev-Branch[{bot_name}][{branch_desc}]",
     max_snapshots=max_snapshots,
+    locales=locales
 )
 
 # --- Upload snapshot to newly create agent ---
