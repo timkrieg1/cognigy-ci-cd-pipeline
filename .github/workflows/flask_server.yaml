@@ -25,7 +25,7 @@ jobs:
         env:
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
         run: |
-          python flask_app/ngrok_service.py
+          python flask_app/ngrok_service.py &
 
       - name: Poll for merge_resolve.json
         run: |
