@@ -18,6 +18,7 @@ required_vars = [
     "COGNIGY_API_KEY_DEV",
     "COGNIGY_API_KEY_PROD",
     "MAX_SNAPSHOTS",
+    "BOT_NAME",
     "RELEASE_DESCRIPTION",
     "RUN_AUTOMATED_TEST",
 ]

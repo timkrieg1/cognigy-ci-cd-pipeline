@@ -1,0 +1,46 @@
+name: Create Dev Branch Agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch_desc:
+        description: "Description of the branch"
+        required: true
+        type: string
+      locale:
+        description: "Locale for the agent"
+        required: true
+        type: choice
+        options:
+          - de-DE
+          - en-US
+
+jobs:
+  run-create-dev-branch-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute create_dev_branch_agent.py
+        env:
+            BOT_NAME: ${{ vars.BOT_NAME }}
+            COGNIGY_BASE_URL_DEV: ${{ vars.COGNIGY_BASE_URL_DEV }}
+            COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
+            MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
+            BRANCH_DESC: ${{ github.event.inputs.branch_desc }}
+            LOCALE: ${{ github.event.inputs.locale }}
+            PYTHONUNBUFFERED: 1  
+        run: |
+          python helper_files/create_dev_branch_agent.py

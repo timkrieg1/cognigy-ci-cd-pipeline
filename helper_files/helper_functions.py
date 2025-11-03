@@ -9,6 +9,7 @@ import re
 from datetime import datetime  
 import time  
 import base64
+from typing import Literal
 
 # --- Decorator for retrying on 500 server errors ---
 def retry_on_500(max_retries=3, wait_seconds=5):
@@ -857,3 +858,36 @@ class CognigyAPIClient:
         r.raise_for_status()
 
         print("Agent deployed successfully.")
+
+    def create_dev_branch_agent(self, branch_desc: str, bot_name: str, locale: Literal["de-DE", "en-US"]) -> str:
+        """
+        Creates a dev branch agent
+
+        Args:
+            dev_branch_name (str): The name of the development branch.
+            bot_name (str): The name of the bot.
+
+        Returns:
+            project_id (str): The ID of the created development branch agent.
+        """
+        branch_agent_name = f"Dev-Branch[{bot_name}][{branch_desc}]"
+
+        url = f"{self.base_url}/projects"
+        post_body = {
+            "name": branch_agent_name,
+            "color": "purple",
+            "locale": locale
+        }
+
+        r = self.session.post(
+            url=url,
+            json=post_body
+        )
+
+        r.raise_for_status()
+        project_id = r.json().get("_id", "")
+
+        if (not project_id):
+            raise RuntimeError("Could not create development branch agent.")
+        
+        return project_id
