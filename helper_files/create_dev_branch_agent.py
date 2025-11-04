@@ -51,10 +51,16 @@ CognigyAPIClientBase = CognigyAPIClient(
 )
 
 # --- Download snapshot from base environment ---
-CognigyAPIClientBase.download_snapshot(release_description="Export Snapshot for Dev Branch Agent.")
+snapshot_name = CognigyAPIClientBase.download_snapshot(
+    release_description="Export Snapshot for Dev Branch Agent."
+)
 
 # --- Create new development branch agent ---
-dev_branch_agent_id = CognigyAPIClientBase.create_dev_branch_agent(branch_desc=branch_desc, bot_name=bot_name, locale=locale)
+dev_branch_agent_id = CognigyAPIClientBase.create_dev_branch_agent(
+    branch_desc=branch_desc,
+    bot_name=bot_name,
+    locale=locale
+)
 
 # --- Instantiate new api client for Branch Agent ---
 CognigyAPIClientBranch = CognigyAPIClient(
@@ -68,3 +74,8 @@ CognigyAPIClientBranch = CognigyAPIClient(
 
 # --- Upload snapshot to newly create agent ---
 CognigyAPIClientBranch.deploy_agent()
+
+# --- Restore snapshot in the dev branch agent ---
+CognigyAPIClientBranch.restore_snapshot(
+    snapshot_name=snapshot_name
+)

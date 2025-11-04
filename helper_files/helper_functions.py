@@ -328,9 +328,14 @@ class CognigyAPIClient:
             print(f"Deleted oldest snapshot: {snapshot_id}", flush=True)
 
     @retry_on_500()
-    def download_snapshot(self, release_description: str) -> None:
+    def download_snapshot(self, release_description: str) -> str:
         """
         Prepares the snapshot for download.
+
+        Args:
+            release_description (str): Description for the snapshot.
+        Returns:
+            str: The name of the created snapshot.
         """
         print("Preparing snapshot for download...", flush=True)
         self.ensure_snapshot_limit()
@@ -891,3 +896,33 @@ class CognigyAPIClient:
             raise RuntimeError("Could not create development branch agent.")
         
         return project_id
+
+    def restore_snapshot(self, snapshot_name: str) -> None:
+        """
+        Restores a snapshot in the current project.
+
+        Args:
+            snapshot_name (str): The name of the snapshot to restore.
+        """
+        print(f"Restoring snapshot: {snapshot_name}")
+
+        # --- Fetch all snapshots to get snapshot id ---
+        snapshot_id = None
+        while snapshot_id is None:
+            response = self.session.get(url=f"{self.base_url}/snapshots", params=self.params)
+            response.raise_for_status()
+            snapshots = response.json().get("items", [])
+            snapshot_id = next((snapshot["_id"] for snapshot in snapshots if snapshot["name"] == snapshot_name), None)
+            if snapshot_id is None:
+                print("Waiting for snapshot upload, retrying in 5 seconds...", flush=True)
+                time.sleep(5)
+        
+        # --- Restore the snapshot ---
+        response = self.session.post(
+            url=f"{self.base_url}/snapshots/{snapshot_id}/restore",
+            json={
+                "projectId": self.project_id
+            }
+        )
+        response.raise_for_status()
+        print("Snapshot restore initiated successfully.", flush=True)
