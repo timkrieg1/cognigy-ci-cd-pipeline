@@ -32,6 +32,11 @@ bot_name = os.getenv("BOT_NAME")
 branch_desc = os.getenv("BRANCH_DESC")
 locale = os.getenv("LOCALE")
 
+# --- Prepare agent folder structure ---
+agent_folder = "agent"
+if os.path.exists(agent_folder):
+    shutil.rmtree(agent_folder)
+
 # --- Get bot mappings ---
 with open("bot_mapping.json", "r") as f:
     bot_mappings = json.load(f)
