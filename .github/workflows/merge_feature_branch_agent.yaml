@@ -1,4 +1,4 @@
-name: Create Feature Branch Agent
+name: Merge Feature Branch Agent
 
 on:
   workflow_call: # Makes this workflow reusable
