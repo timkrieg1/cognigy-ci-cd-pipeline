@@ -1,7 +1,7 @@
 name: Create Dev Branch Agent
 
 on:
-  workflow_dispatch:
+  workflow_call: # Makes this workflow reusable
     inputs:
       branch_desc:
         description: "Description of the branch"
@@ -10,10 +10,22 @@ on:
       locale:
         description: "Locale for the agent"
         required: true
-        type: choice
-        options:
-          - de-DE
-          - en-US
+        type: string
+      bot_name:
+        description: "Name of the bot"
+        required: true
+        type: string
+      cognigy_base_url_dev:
+        description: "Cognigy Base URL for development"
+        required: true
+        type: string
+      max_snapshots:
+        description: "Maximum number of snapshots"
+        required: true
+        type: string
+    secrets:
+      COGNIGY_API_KEY_DEV: # Define required secrets for the reusable workflow
+        required: true
 
 jobs:
   run-create-dev-branch-agent:
@@ -35,12 +47,12 @@ jobs:
 
       - name: Execute create_dev_branch_agent.py
         env:
-            BOT_NAME: ${{ vars.BOT_NAME }}
-            COGNIGY_BASE_URL_DEV: ${{ vars.COGNIGY_BASE_URL_DEV }}
+            BOT_NAME: ${{ inputs.bot_name }}
+            COGNIGY_BASE_URL_DEV: ${{ inputs.cognigy_base_url_dev }}
             COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
-            MAX_SNAPSHOTS: ${{ vars.MAX_SNAPSHOTS }}
-            BRANCH_DESC: ${{ github.event.inputs.branch_desc }}
-            LOCALE: ${{ github.event.inputs.locale }}
-            PYTHONUNBUFFERED: 1  
+            MAX_SNAPSHOTS: ${{ inputs.max_snapshots }}
+            BRANCH_DESC: ${{ inputs.branch_desc }}
+            LOCALE: ${{ inputs.locale }}
+            PYTHONUNBUFFERED: '1'
         run: |
           python helper_files/create_dev_branch_agent.py
