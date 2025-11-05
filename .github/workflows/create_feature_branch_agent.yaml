@@ -3,28 +3,45 @@ name: Create Dev Branch Agent
 on:
   workflow_call: # Makes this workflow reusable
     inputs:
-      branch_desc:
+      REPOSITORY:
+        description: 'Repository name'
+        required: true
+        type: string
+      BOT_MAPPING_BASE64:
+          description: 'Base64 encoded bot mapping file'
+          required: true
+          type: string
+      BRANCH_DESC:
         description: "Description of the branch"
         required: true
         type: string
-      locale:
+      LOCALE:
         description: "Locale for the agent"
         required: true
         type: string
-      bot_name:
+      BOT_NAME:
         description: "Name of the bot"
         required: true
         type: string
-      cognigy_base_url_dev:
+      COGNIGY_BASE_URL_DEV:
         description: "Cognigy Base URL for development"
         required: true
         type: string
-      max_snapshots:
+      COGNIGY_BASE_URL_TEST:
+        description: "Cognigy Base URL for test"
+        required: true
+        type: string
+      MAX_SNAPSHOTS:
         description: "Maximum number of snapshots"
         required: true
         type: string
     secrets:
-      COGNIGY_API_KEY_DEV: # Define required secrets for the reusable workflow
+      PAT_TOKEN:
+        description: 'GitHub Personal Access Token for creating pull requests'
+        required: true
+      COGNIGY_API_KEY_DEV:
+        required: true
+      COGNIGY_API_LEY_TEST:
         required: true
 
 jobs:
@@ -32,8 +49,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout current repository (CI/CD pipeline repo)
+        uses: actions/checkout@v4
+        with:
+          repository: timkrieg1/cognigy-ci-cd-pipeline
+          path: pipeline-repo
+
+      - name: Checkout calling repository (bot repo)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.REPOSITORY }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: bot-repo
+
+      - name: Decode and create bot_mappings.json
+        run: |
+          echo "${{ inputs.BOT_MAPPING_BASE64 }}" | base64 -d > bot-repo/bot_mappings.json
+          echo "Created bot_mappings.json in bot-repo directory:"
+          cat bot-repo/bot_mappings.json
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -45,14 +78,25 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Configure Git for bot repository
+        run: |
+          cd bot-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
+
       - name: Execute create_dev_branch_agent.py
         env:
-            BOT_NAME: ${{ inputs.bot_name }}
-            COGNIGY_BASE_URL_DEV: ${{ inputs.cognigy_base_url_dev }}
+            BOT_NAME: ${{ inputs.BOT_NAME }}
+            COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
+            COGNIGY_BASE_URL_TEST: ${{ inputs.COGNIGY_BASE_URL_TEST }}
             COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
-            MAX_SNAPSHOTS: ${{ inputs.max_snapshots }}
-            BRANCH_DESC: ${{ inputs.branch_desc }}
-            LOCALE: ${{ inputs.locale }}
+            COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
+            MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
+            BRANCH_DESC: ${{ inputs.BRANCH_DESC }}
+            LOCALE: ${{ inputs.LOCALE }}
             PYTHONUNBUFFERED: '1'
         run: |
-          python helper_files/create_dev_branch_agent.py
+          # Change to bot repository directory before running the script
+          cd bot-repo
+          python ../pipeline_repo/helper_files/create_dev_branch_agent.py
