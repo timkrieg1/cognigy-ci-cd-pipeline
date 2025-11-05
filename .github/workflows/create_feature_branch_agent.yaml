@@ -43,6 +43,10 @@ on:
         required: true
       COGNIGY_API_KEY_TEST:
         required: true
+        
+permissions:
+  contents: write
+  pull-requests: write
 
 jobs:
   run-create-dev-branch-agent:
