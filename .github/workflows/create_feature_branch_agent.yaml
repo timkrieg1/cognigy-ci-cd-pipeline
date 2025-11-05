@@ -41,7 +41,7 @@ on:
         required: true
       COGNIGY_API_KEY_DEV:
         required: true
-      COGNIGY_API_LEY_TEST:
+      COGNIGY_API_KEY_TEST:
         required: true
 
 jobs:
