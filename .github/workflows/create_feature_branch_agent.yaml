@@ -76,7 +76,7 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r pipeline-repo/requirements.txt
 
       - name: Configure Git for bot repository
         run: |
