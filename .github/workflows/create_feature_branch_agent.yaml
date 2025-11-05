@@ -99,4 +99,4 @@ jobs:
         run: |
           # Change to bot repository directory before running the script
           cd bot-repo
-          python ../pipeline_repo/helper_files/create_dev_branch_agent.py
+          python ../pipeline-repo/helper_files/create_dev_branch_agent.py
