@@ -55,6 +55,47 @@ CognigyAPIClientBase = CognigyAPIClient(
     locales=locales
 )
 
+#Start fetching data for package creation
+flow_ids = CognigyAPIClientBase.get_flow_ids()
+lexicon_ids = CognigyAPIClientBase.get_lexicon_ids()
+connection_ids = CognigyAPIClientBase.get_connection_ids()
+nlu_connector_ids = CognigyAPIClientBase.get_nluconnector_ids()
+ai_agent_ids = CognigyAPIClientBase.get_aiagent_ids()
+large_language_model_ids = CognigyAPIClientBase.get_largelanguagemodel_ids()
+knowledge_store_ids = CognigyAPIClientBase.get_knowledgestore_ids()
+function_ids = CognigyAPIClientBase.get_function_ids()
+
+#Combine to package ressource list
+package_ressource_ids = [
+    *flow_ids,
+    *lexicon_ids,
+    *connection_ids,
+    *nlu_connector_ids,
+    *ai_agent_ids,
+    *large_language_model_ids,
+    *knowledge_store_ids
+]
+
+#Create package
+CognigyAPIClientBase.create_package(
+    resource_ids=package_ressource_ids
+)
+
+CognigyAPIClientBase.download_package()
+
+
+# --- Extract all agent ressources by ids ---
+CognigyAPIClientBase.extract_agent_resources_by_ids(
+    flow_ids=flow_ids,
+    lexicon_ids=lexicon_ids,
+    connection_ids=connection_ids,
+    nlu_connector_ids=nlu_connector_ids,
+    ai_agent_ids=ai_agent_ids,
+    large_language_model_ids=large_language_model_ids,
+    knowledge_store_ids=knowledge_store_ids,
+    function_ids=function_ids
+)
+
 # --- Download snapshot from base environment ---
 snapshot_name = CognigyAPIClientBase.download_snapshot(
     release_description="Export Snapshot for Dev Branch Agent."
