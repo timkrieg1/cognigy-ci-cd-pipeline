@@ -42,3 +42,4 @@ Thumbs.db
 # Local test files
 local_test.py
 
+*.txt

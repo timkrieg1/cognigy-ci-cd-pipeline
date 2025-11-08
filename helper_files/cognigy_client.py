@@ -3,7 +3,7 @@ import os
 import zipfile
 from datetime import datetime
 import re
-from helper_files.helper_functions import clean_base_url, retry_on_500
+from helper_functions import clean_base_url, retry_on_500
 from typing import List, Literal
 import time
 from tqdm import tqdm
