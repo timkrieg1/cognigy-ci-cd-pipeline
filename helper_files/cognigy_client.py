@@ -210,7 +210,7 @@ class CognigyAPIClient:
         }
         package_id = ""
 
-        print(f"Starting {knowledge_store if 'knowledge_store ' else ''}package download", flush=True)
+        print(f"Starting {'knowledge_store ' if knowledge_store else ''}package download", flush=True)
         while True:
             response = self.session.get(
                 url=f"{self.base_url}/packages",
