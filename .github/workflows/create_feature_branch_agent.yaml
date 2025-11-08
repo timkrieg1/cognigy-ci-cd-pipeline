@@ -89,7 +89,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
 
-      - name: Execute create_dev_branch_agent.py
+      - name: Execute create_feature_branch_agent.py
         env:
             BOT_NAME: ${{ inputs.BOT_NAME }}
             COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
@@ -103,4 +103,4 @@ jobs:
         run: |
           # Change to bot repository directory before running the script
           cd bot-repo
-          python ../pipeline-repo/helper_files/create_dev_branch_agent.py
+          python ../pipeline-repo/helper_files/create_feature_branch_agent.py
