@@ -1,0 +1,13 @@
+name: Change Ids
+
+on:
+  workflow_call: # Makes this workflow reusable
+
+jobs:
+  log-variable:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Log the variable
+        run: |
+          echo "This Workflow passed"
