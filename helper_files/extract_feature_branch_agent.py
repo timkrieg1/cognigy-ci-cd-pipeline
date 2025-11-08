@@ -31,7 +31,7 @@ bot_name = os.getenv("BOT_NAME")
 branch_name = os.getenv("BRANCH_NAME")
 
 # --- Prepare agent folder structure ---
-feature_agent_folder = "agent"
+feature_agent_folder = "feature_agent"
 if os.path.exists(feature_agent_folder):
     shutil.rmtree(feature_agent_folder)
 
