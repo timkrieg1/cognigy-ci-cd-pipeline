@@ -14,6 +14,10 @@ on:
         description: "Cognigy Base URL for development"
         required: true
         type: string
+      BRANCH_NAME:
+        description: "Name of the feature branch"
+        required: true
+        type: string
     secrets:
       PAT_TOKEN:
         description: 'GitHub Personal Access Token for creating pull requests'
@@ -38,6 +42,7 @@ jobs:
           repository: ${{ inputs.REPOSITORY }}
           token: ${{ secrets.PAT_TOKEN }}
           path: bot-repo
+          ref: ${{ inputs.BRANCH_NAME }} # Checkout the feature branch
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -61,6 +66,7 @@ jobs:
           BOT_NAME: ${{ inputs.BOT_NAME }}
           COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
           COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
+          BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
           PYTHONUNBUFFERED: '1'
         run: |
           # Change to bot repository directory before running the script

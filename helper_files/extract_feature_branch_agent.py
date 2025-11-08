@@ -16,6 +16,7 @@ required_vars = [
     "COGNIGY_BASE_URL_DEV",
     "COGNIGY_API_KEY_DEV",
     "BOT_NAME",
+    "BRANCH_NAME"
 ]
 
 # --- Find missing environment variables ---
@@ -27,6 +28,7 @@ if missing_vars:
 base_url_dev = os.getenv("COGNIGY_BASE_URL_DEV")
 api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
 bot_name = os.getenv("BOT_NAME")
+branch_name = os.getenv("BRANCH_NAME")
 
 # --- Prepare agent folder structure ---
 feature_agent_folder = "agent"
@@ -84,16 +86,23 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
     function_ids=function_ids
 )
 
+# --- Git branch validation and commit logic ---
 try:
-    # Add the folder to Git
-    subprocess.run(["git", "add", feature_agent_folder], check=True)
+    # Attempt to switch to the specified branch
+    subprocess.run(["git", "checkout", branch_name], check=True)
+    print(f"Switched to branch '{branch_name}'.")
+except subprocess.CalledProcessError:
+    # Fail if the branch does not exist
+    raise EnvironmentError(f"Branch '{branch_name}' does not exist. Ensure the branch is created before running this script.")
 
-    # Commit the changes with a message
+# Add the folder and commit changes
+try:
+    subprocess.run(["git", "add", feature_agent_folder], check=True)
     commit_message = f"Add extracted resources in '{feature_agent_folder}' folder"
     subprocess.run(["git", "commit", "-m", commit_message], check=True)
 
-    # Push the changes to the current branch
-    subprocess.run(["git", "push"], check=True)
-    print(f"Successfully committed and pushed the folder '{feature_agent_folder}' to the current branch.")
+    # Push the changes to the branch
+    subprocess.run(["git", "push", "-u", "origin", branch_name], check=True)
+    print(f"Successfully committed and pushed the folder '{feature_agent_folder}' to the branch '{branch_name}'.")
 except subprocess.CalledProcessError as e:
-    print(f"An error occurred while committing the folder: {e}")
+    print(f"An error occurred while committing or pushing the folder: {e}")
