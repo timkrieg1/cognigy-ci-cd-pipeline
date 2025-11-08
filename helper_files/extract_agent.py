@@ -1,4 +1,4 @@
-from helper_functions import CognigyAPIClient
+from helper_files.cognigy_client import CognigyAPIClient
 from dotenv import load_dotenv
 import os
 import sys

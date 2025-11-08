@@ -1,4 +1,4 @@
-from helper_functions import CognigyAPIClient
+from helper_files.cognigy_client import CognigyAPIClient
 from dotenv import load_dotenv
 import os
 import sys
@@ -96,6 +96,13 @@ CognigyAPIClientBase.extract_agent_resources_by_ids(
     function_ids=function_ids
 )
 
+# --- Download knowledge store package ---
+CognigyAPIClientBase.create_package(
+    resource_ids=knowledge_store_ids
+)
+
+CognigyAPIClientBase.download_package(knowledge_store=True)
+
 # --- Download snapshot from base environment ---
 snapshot_name = CognigyAPIClientBase.download_snapshot(
     release_description="Export Snapshot for Dev Branch Agent."
@@ -124,6 +131,10 @@ CognigyAPIClientBranch = CognigyAPIClient(
     max_snapshots=max_snapshots,
     locales=locales
 )
+
+# --- Upload knowledge store package ---
+
+# TO DO
 
 # --- Upload snapshot to newly create agent ---
 CognigyAPIClientBranch.deploy_agent()

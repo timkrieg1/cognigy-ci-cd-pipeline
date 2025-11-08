@@ -2,7 +2,7 @@ import requests
 import os
 from dotenv import load_dotenv
 import json
-from helper_functions import CognigyAPIClient
+from helper_files.cognigy_client import CognigyAPIClient
 
 # --- Load environment variables ---
 load_dotenv(override=True)
