@@ -48,6 +48,7 @@ CognigyAPIClientFeature = CognigyAPIClient(
     playbook_prefixes=None,
     playbook_flows=None,
     max_snapshots=None,
+    folder_name=feature_agent_folder
 )
 
 #Start fetching data for package creation
@@ -80,8 +81,7 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
     ai_agent_ids=ai_agent_ids,
     large_language_model_ids=large_language_model_ids,
     knowledge_store_ids=knowledge_store_ids,
-    function_ids=function_ids,
-    folder_name=feature_agent_folder
+    function_ids=function_ids
 )
 
 try:
