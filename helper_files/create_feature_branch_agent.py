@@ -170,7 +170,7 @@ subprocess.run(["git", "pull", remote_name, "main"], check=True)
 subprocess.run(["git", "checkout", "-b", branch_name], check=True)
 
 # Stage and commit new agent export and dev_branch_agent_info.json
-subprocess.run(["git", "add", agent_folder, "feature_branch_agent_info.json"], check=True)
+subprocess.run(["git", "add", agent_folder, "feature_branch_agent_id.json"], check=True)
 subprocess.run(["git", "commit", "-m", f"Update agent export and save feature_branch_agent_id for {bot_name}"], check=True)
 
 # Push the new branch
