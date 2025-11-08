@@ -6,18 +6,6 @@ on:
         description: 'Repository name'
         required: true
         type: string
-      BOT_MAPPING_BASE64:
-          description: 'Base64 encoded bot mapping file'
-          required: true
-          type: string
-      BRANCH_DESC:
-        description: "Description of the branch"
-        required: true
-        type: string
-      LOCALE:
-        description: "Locale for the agent"
-        required: true
-        type: string
       BOT_NAME:
         description: "Name of the bot"
         required: true
@@ -26,21 +14,11 @@ on:
         description: "Cognigy Base URL for development"
         required: true
         type: string
-      COGNIGY_BASE_URL_TEST:
-        description: "Cognigy Base URL for test"
-        required: true
-        type: string
-      MAX_SNAPSHOTS:
-        description: "Maximum number of snapshots"
-        required: true
-        type: string
     secrets:
       PAT_TOKEN:
         description: 'GitHub Personal Access Token for creating pull requests'
         required: true
       COGNIGY_API_KEY_DEV:
-        required: true
-      COGNIGY_API_KEY_TEST:
         required: true
 
 jobs:
