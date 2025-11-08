@@ -1,7 +1,6 @@
-name: Create Feature Branch Agent
-
+name: Pre Merge Change Ids
 on:
-  workflow_call: # Makes this workflow reusable
+  workflow_call:
     inputs:
       REPOSITORY:
         description: 'Repository name'
@@ -43,13 +42,9 @@ on:
         required: true
       COGNIGY_API_KEY_TEST:
         required: true
-        
-permissions:
-  contents: write
-  pull-requests: write
 
 jobs:
-  run-create-feature-branch-agent:
+  extract-feature-branch-agent:
     runs-on: ubuntu-latest
 
     steps:
@@ -66,12 +61,6 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           path: bot-repo
 
-      - name: Decode and create bot_mappings.json
-        run: |
-          echo "${{ inputs.BOT_MAPPING_BASE64 }}" | base64 -d > bot-repo/bot_mappings.json
-          echo "Created bot_mappings.json in bot-repo directory:"
-          cat bot-repo/bot_mappings.json
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -82,25 +71,20 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r pipeline-repo/requirements.txt
 
-      - name: Configure Git for bot repository
-        run: |
-          cd bot-repo
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
-
-      - name: Execute create_dev_branch_agent.py
+          - name: Configure Git for bot repository
+          run: |
+            cd bot-repo
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
+  
+      - name: Execute extract_feature_branch_agent.py
         env:
             BOT_NAME: ${{ inputs.BOT_NAME }}
             COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
-            COGNIGY_BASE_URL_TEST: ${{ inputs.COGNIGY_BASE_URL_TEST }}
             COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
-            COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
-            MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
-            BRANCH_DESC: ${{ inputs.BRANCH_DESC }}
-            LOCALE: ${{ inputs.LOCALE }}
             PYTHONUNBUFFERED: '1'
         run: |
           # Change to bot repository directory before running the script
           cd bot-repo
-          python ../pipeline-repo/helper_files/create_dev_branch_agent.py
+          python ../pipeline-repo/helper_files/extract_feature_branch_agent.py

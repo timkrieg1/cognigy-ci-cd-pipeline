@@ -59,9 +59,9 @@ class CognigyAPIClient:
             Sends a POST request to the specified endpoint with optional data.
     """
 
-    def __init__(self,base_url: str = None, api_key: dict = None, project_id: str = None, bot_name: str = None, playbook_prefixes: List[str] = None, locales: dict = None, playbook_flows: dict = None, max_snapshots: int = None):
+    def __init__(self,base_url: str = None, api_key: dict = None, project_id: str = None, bot_name: str = None, playbook_prefixes: List[str] = None, locales: dict = None, playbook_flows: dict = None, max_snapshots: int = None, folder_name: str = "agent"):
         # --- Validate required parameters ---
-        if (not base_url or not api_key or not project_id or not bot_name or not locales):
+        if (not base_url or not api_key or not project_id or not bot_name):
             raise ValueError("Cannot instantiate Cognigy API Client. Base URL, API Key, and Project ID and Bot Name must be provided.")
         # --- Clean bot_name for branch safety ---
         cleaned_bot_name = re.sub(r'[^A-Za-z0-9._-]', '', bot_name.replace(' ', '-'))
@@ -75,6 +75,8 @@ class CognigyAPIClient:
         self.playbook_prefixes = playbook_prefixes
         self.playbook_flows = playbook_flows
         self.max_snapshots = max_snapshots
+        self.folder_name = folder_name
+
         # --- Set up request headers and session ---
         self.headers = {
             "Content-Type": "application/json",
@@ -265,7 +267,7 @@ class CognigyAPIClient:
             response.raise_for_status()
             download_link = response.json().get("downloadLink", "")
             # --- Download the file ---
-            target_dir = os.path.join("agent", "package")
+            target_dir = os.path.join(self.folder_name, "package")
             os.makedirs(target_dir, exist_ok=True)
             package_path = os.path.join(target_dir, f"{self.package_name}.zip")
             with self.session.get(download_link, stream=True) as r:
@@ -388,7 +390,7 @@ class CognigyAPIClient:
 
         # --- Poll for the snapshot to be packaged and download the actual snapshot file ---
         download_link_url = f"{self.base_url}/snapshots/{snapshot_id}/downloadLink"
-        target_dir = os.path.join("agent", "snapshot")
+        target_dir = os.path.join(self.folder_name, "snapshot")
         os.makedirs(target_dir, exist_ok=True)
         snapshot_path = os.path.join(target_dir, f"{self.snapshot_name}.csnap")
 
@@ -553,35 +555,35 @@ class CognigyAPIClient:
 
         if len(flow_ids) > 0:
             print(f"Extracting {len(flow_ids)} flows...", flush=True)
-            self.extract_flow_data(flow_ids, output_path="agent/flows")
+            self.extract_flow_data(flow_ids, output_path=f"{self.folder_name}/flows")
             print("Flows extraction complete.", flush=True)
         if len(lexicon_ids) > 0:
             print(f"Extracting {len(lexicon_ids)} lexicons...", flush=True)
-            self.extract_resource_data(lexicon_ids, output_path="agent/lexicons", endpoint="lexicons")
+            self.extract_resource_data(lexicon_ids, output_path=f"{self.folder_name}/lexicons", endpoint="lexicons")
             print("Lexicons extraction complete.", flush=True)
         if len(connection_ids) > 0:
             print(f"Extracting {len(connection_ids)} connections...", flush=True)
-            self.extract_resource_data(connection_ids, output_path="agent/connections", endpoint="connections")
+            self.extract_resource_data(connection_ids, output_path=f"{self.folder_name}/connections", endpoint="connections")
             print("Connections extraction complete.", flush=True)
         if len(nlu_connector_ids) > 0:
             print(f"Extracting {len(nlu_connector_ids)} NLU connectors...", flush=True)
-            self.extract_resource_data(nlu_connector_ids, output_path="agent/nluconnectors", endpoint="nluconnectors")
+            self.extract_resource_data(nlu_connector_ids, output_path=f"{self.folder_name}/nluconnectors", endpoint="nluconnectors")
             print("NLU connectors extraction complete.", flush=True)
         if len(ai_agent_ids) > 0:
             print(f"Extracting {len(ai_agent_ids)} AI agents...", flush=True)
-            self.extract_ai_agents(ai_agent_ids, output_path="agent/aiagents")
+            self.extract_ai_agents(ai_agent_ids, output_path=f"{self.folder_name}/aiagents")
             print("AI agents extraction complete.", flush=True)
         if len(large_language_model_ids) > 0:
             print(f"Extracting {len(large_language_model_ids)} large language models...", flush=True)
-            self.extract_resource_data(large_language_model_ids, output_path="agent/largelanguagemodels", endpoint="largelanguagemodels")
+            self.extract_resource_data(large_language_model_ids, output_path=f"{self.folder_name}/largelanguagemodels", endpoint="largelanguagemodels")
             print("Large language models extraction complete.", flush=True)
         if len(knowledge_store_ids) > 0:
             print(f"Extracting {len(knowledge_store_ids)} knowledge stores...", flush=True)
-            self.extract_knowledge_store_data(knowledge_store_ids, output_path="agent/knowledgestores")
+            self.extract_knowledge_store_data(knowledge_store_ids, output_path=f"{self.folder_name}/knowledgestores")
             print("Knowledge stores extraction complete.", flush=True)
         if len(function_ids) > 0:
             print(f"Extracting {len(function_ids)} functions...", flush=True)
-            self.extract_resource_data(function_ids, output_path="agent/functions", endpoint="functions")
+            self.extract_resource_data(function_ids, output_path=f"{self.folder_name}/functions", endpoint="functions")
             print("Functions extraction complete.", flush=True)
 
         print("All agent resources have been extracted successfully.", flush=True)
@@ -742,7 +744,7 @@ class CognigyAPIClient:
             all_knowledge_store_data[knowledge_store_data["metadata"]["name"]] = knowledge_store_data
 
         # --- Write to output dictionary ---
-        output_path = "agent/knowledgestores"
+        output_path = f"{self.folder_name}/knowledgestores"
         os.makedirs(output_path, exist_ok=True)
         for store_name, store_data in all_knowledge_store_data.items():
             # --- Create a subdirectory for each knowledge store ---
@@ -834,12 +836,12 @@ class CognigyAPIClient:
         print("Deploying agent...")
 
         # --- Ensure snapshot exists in agent directory exists ---
-        snapshot_dir = os.path.join("agent", "snapshot")
+        snapshot_dir = os.path.join(self.folder_name, "snapshot")
         csnap_files = [f for f in os.listdir(snapshot_dir) if f.endswith('.csnap')]
         if not csnap_files:
-            raise FileNotFoundError("No .csnap file found in the agent/snapshot directory.")
+            raise FileNotFoundError(f"No .csnap file found in the {self.folder_name}/snapshot directory.")
         if len(csnap_files) > 1:
-            raise RuntimeError("Multiple .csnap files found in the agent/snapshot directory. There should be only one.")
+            raise RuntimeError(f"Multiple .csnap files found in the {self.folder_name}/snapshot directory. There should be only one.")
 
         # --- Check if max snapshots is reached, else delete oldest snapshot ---
         self.ensure_snapshot_limit()

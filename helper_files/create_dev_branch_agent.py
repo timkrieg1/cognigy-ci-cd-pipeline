@@ -102,17 +102,24 @@ snapshot_name = CognigyAPIClientBase.download_snapshot(
 )
 
 # --- Create new development branch agent ---
-dev_branch_agent_id = CognigyAPIClientBase.create_dev_branch_agent(
+feature_branch_agent_id = CognigyAPIClientBase.create_dev_branch_agent(
     branch_desc=branch_desc,
     bot_name=bot_name,
     locale=locale
 )
 
+# --- Save dev_branch_agent_id to a JSON file ---
+feature_branch_agent_info = {
+    "dev_branch_agent_id": feature_branch_agent_id
+}
+with open("feature_branch_agent_id.json", "w") as json_file:
+    json.dump(feature_branch_agent_info, json_file, indent=4)
+
 # --- Instantiate new api client for Branch Agent ---
 CognigyAPIClientBranch = CognigyAPIClient(
     base_url=base_url_dev,
     api_key=api_key_dev,
-    project_id=dev_branch_agent_id,
+    project_id=feature_branch_agent_id,
     bot_name=f"Dev-Branch[{bot_name}][{branch_desc}]",
     max_snapshots=max_snapshots,
     locales=locales
@@ -162,9 +169,9 @@ subprocess.run(["git", "pull", remote_name, "main"], check=True)
 # Create new branch from main
 subprocess.run(["git", "checkout", "-b", branch_name], check=True)
 
-# Stage and commit new agent export
-subprocess.run(["git", "add", agent_folder], check=True)
-subprocess.run(["git", "commit", "-m", f"Update agent export for {bot_name}"], check=True)
+# Stage and commit new agent export and dev_branch_agent_info.json
+subprocess.run(["git", "add", agent_folder, "dev_branch_agent_info.json"], check=True)
+subprocess.run(["git", "commit", "-m", f"Update agent export and save feature_branch_agent_id for {bot_name}"], check=True)
 
 # Push the new branch
 subprocess.run(["git", "push", "-u", remote_name, branch_name], check=True)
