@@ -631,7 +631,7 @@ class CognigyAPIClient:
             chart_nodes_data = []
             for node in chart:
                 r = self.session.get(
-                    url=f"{self.base_url}/flows/{flow_id}/chart/nodes/{node['node']}"
+                    url=f"{self.base_url}/flows/{flow_id}/chart/nodes/{node['_id']}"
                 )
                 r.raise_for_status()
                 node_data = r.json()
