@@ -618,6 +618,13 @@ class CognigyAPIClient:
             )
             r.raise_for_status()
             chart = r.json().get("relations")
+
+            # --- Rename node to _id because _id key does not show the real node id ---
+            for subobject in chart:
+                if "_id" in subobject:
+                    del subobject["_id"]
+                if "node" in subobject:
+                    subobject["_id"] = subobject.pop("node")
             
 
             # --- Fetch each node in the chart and add it to the chart data ---
