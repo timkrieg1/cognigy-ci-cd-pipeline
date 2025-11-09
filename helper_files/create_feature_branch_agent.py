@@ -64,6 +64,7 @@ ai_agent_ids = CognigyAPIClientBase.get_aiagent_ids()
 large_language_model_ids = CognigyAPIClientBase.get_largelanguagemodel_ids()
 knowledge_store_ids = CognigyAPIClientBase.get_knowledgestore_ids()
 function_ids = CognigyAPIClientBase.get_function_ids()
+locale_ids = CognigyAPIClientBase.get_locale_ids()
 
 #Combine to package ressource list
 package_ressource_ids = [
@@ -93,7 +94,8 @@ CognigyAPIClientBase.extract_agent_resources_by_ids(
     ai_agent_ids=ai_agent_ids,
     large_language_model_ids=large_language_model_ids,
     knowledge_store_ids=knowledge_store_ids,
-    function_ids=function_ids
+    function_ids=function_ids,
+    locale_ids=locale_ids
 )
 
 # --- Download knowledge store package ---
@@ -182,7 +184,7 @@ subprocess.run(["git", "checkout", "-b", branch_name], check=True)
 
 # Stage and commit new agent export and dev_branch_agent_info.json
 subprocess.run(["git", "add", agent_folder, "feature_branch_agent_id.json"], check=True)
-subprocess.run(["git", "commit", "-m", f"Update agent export and save feature_branch_agent_id for {bot_name}"], check=True)
+subprocess.run(["git", "commit", "-m", f"Created feature agent - {branch_name}"], check=True)
 
 # Push the new branch
 subprocess.run(["git", "push", "-u", remote_name, branch_name], check=True)

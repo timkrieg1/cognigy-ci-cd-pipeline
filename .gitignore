@@ -43,3 +43,7 @@ Thumbs.db
 local_test.py
 
 *.txt
+
+# Agent directories
+/agent
+/feature_agent

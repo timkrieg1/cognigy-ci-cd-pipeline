@@ -87,6 +87,7 @@ ai_agent_ids = CognigyAPIClientDev.get_aiagent_ids()
 large_language_model_ids = CognigyAPIClientDev.get_largelanguagemodel_ids()
 knowledge_store_ids = CognigyAPIClientDev.get_knowledgestore_ids()
 function_ids = CognigyAPIClientDev.get_function_ids()
+locale_ids = CognigyAPIClientDev.get_locale_ids()
 
 #Combine to package ressource list
 package_ressource_ids = [
@@ -119,7 +120,8 @@ CognigyAPIClientDev.extract_agent_resources_by_ids(
     ai_agent_ids=ai_agent_ids,
     large_language_model_ids=large_language_model_ids,
     knowledge_store_ids=knowledge_store_ids,
-    function_ids=function_ids
+    function_ids=function_ids,
+    locale_ids=locale_ids
 )
 
 # --- Git branch creation and commit logic ---

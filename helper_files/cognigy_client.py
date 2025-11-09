@@ -176,6 +176,17 @@ class CognigyAPIClient:
         for function in functions:
             function_ids.append(function["_id"])
         return function_ids
+
+    def get_locale_ids(self) -> List[dict]:
+        """
+        Fetches all locales from the Cognigy API.
+        """
+        function_ids = []
+        functions = self.get("locales")
+        # --- Collect all function IDs ---
+        for function in functions:
+            function_ids.append(function["_id"])
+        return function_ids
     
     @retry_on_500()
     def create_package(self, resource_ids: List[str]) -> dict:
@@ -518,7 +529,8 @@ class CognigyAPIClient:
         ai_agent_ids: list[str] = [],
         large_language_model_ids: list[str] = [],
         knowledge_store_ids: list[str] = [],
-        function_ids: list[str] = []
+        function_ids: list[str] = [],
+        locale_ids: list[str] = []
     ) -> dict:
         """
         Extracts agent resources by their IDs and returns them in a dictionary.
@@ -556,6 +568,10 @@ class CognigyAPIClient:
             print(f"Extracting {len(function_ids)} functions...", flush=True)
             self.extract_resource_data(function_ids, output_path=f"{self.folder_name}/functions", endpoint="functions")
             print("Functions extraction complete.", flush=True)
+        if len(locale_ids) > 0:
+            print(f"Extracting {len(locale_ids)} locales...", flush=True)
+            self.extract_resource_data(locale_ids, output_path=f"{self.folder_name}/locales", endpoint="locales")
+            print("Locales extraction complete.", flush=True)
 
         print("All agent resources have been extracted successfully.", flush=True)
     
