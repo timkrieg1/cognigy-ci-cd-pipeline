@@ -98,12 +98,13 @@ CognigyAPIClientBase.extract_agent_resources_by_ids(
     locale_ids=locale_ids
 )
 
-# --- Download knowledge store package ---
-CognigyAPIClientBase.create_package(
-    resource_ids=knowledge_store_ids
-)
+if not knowledge_store_ids is None or not len(knowledge_store_ids) < 1:
+    # --- Download knowledge store package ---
+    CognigyAPIClientBase.create_package(
+        resource_ids=knowledge_store_ids
+    )
 
-CognigyAPIClientBase.download_package(knowledge_store=True)
+    CognigyAPIClientBase.download_package(knowledge_store=True)
 
 # --- Download snapshot from base environment ---
 snapshot_name = CognigyAPIClientBase.download_snapshot(
