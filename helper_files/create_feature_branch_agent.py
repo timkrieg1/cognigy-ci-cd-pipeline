@@ -98,7 +98,7 @@ CognigyAPIClientBase.extract_agent_resources_by_ids(
     locale_ids=locale_ids
 )
 
-if not knowledge_store_ids is None and not len(knowledge_store_ids) > 0:
+if not knowledge_store_ids is None and len(knowledge_store_ids) > 0:
     # --- Download knowledge store package ---
     CognigyAPIClientBase.create_package(
         resource_ids=knowledge_store_ids
