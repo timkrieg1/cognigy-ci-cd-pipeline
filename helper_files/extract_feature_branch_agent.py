@@ -97,7 +97,7 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
 mapping = read_json_files_in_directory("agent", main=True)
 mapping = read_json_files_in_directory(feature_agent_folder, main=False, mapping=mapping)
 mapping[dev_branch_agent_id] = main_branch_agent_id
-replace_ids_in_json_files("feature_agent copy", mapping)
+replace_ids_in_json_files(feature_agent_folder, mapping)
 
 # --- Git branch validation and commit logic ---
 try:
