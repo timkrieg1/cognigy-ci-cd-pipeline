@@ -32,6 +32,7 @@ bot_name = os.getenv("BOT_NAME")
 branch_name = os.getenv("BRANCH_NAME")
 
 # --- Prepare agent folder structure ---
+agent_folder = "agent"
 feature_agent_folder = "feature_agent"
 if os.path.exists(feature_agent_folder):
     shutil.rmtree(feature_agent_folder)
@@ -94,10 +95,18 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
 )
 
 # --- Replace the feature bot specific ids with the original ids of the main agent ---
-mapping = read_json_files_in_directory("agent", main=True)
+mapping = read_json_files_in_directory(agent_folder, main=True)
 mapping = read_json_files_in_directory(feature_agent_folder, main=False, mapping=mapping)
 mapping[dev_branch_agent_id] = main_branch_agent_id
 replace_ids_in_json_files(feature_agent_folder, mapping)
+
+# --- Replace the agent folder with the feature_agent folder ---
+
+if os.path.exists(agent_folder):
+    shutil.rmtree(agent_folder)  # Remove the existing agent folder
+shutil.move(feature_agent_folder, agent_folder)  # Rename feature_agent to agent
+
+print(f"Replaced the '{agent_folder}' folder with the '{feature_agent_folder}' folder.")
 
 # --- Git branch validation and commit logic ---
 try:
@@ -119,3 +128,4 @@ try:
     print(f"Successfully committed and pushed the folder '{feature_agent_folder}' to the branch '{branch_name}'.")
 except subprocess.CalledProcessError as e:
     print(f"An error occurred while committing or pushing the folder: {e}")
+
