@@ -1,4 +1,5 @@
 from cognigy_client import CognigyAPIClient
+from helper_functions import read_json_files_in_directory, replace_ids_in_json_files
 from dotenv import load_dotenv
 import os
 import sys
@@ -39,6 +40,10 @@ if os.path.exists(feature_agent_folder):
 with open("feature_branch_agent_id.json", "r") as json_file:
     feature_branch_agent_info = json.load(json_file)
     dev_branch_agent_id = feature_branch_agent_info["dev_branch_agent_id"]
+# --- Read bot_mapping.json ---
+with open("bot_mapping.json", "r") as json_file:
+    bot_mapping = json.load(json_file)
+    main_branch_agent_id = bot_mapping["dev"]
 
 # --- Instantiate Cognigy Client with feature branch project ID ---
 CognigyAPIClientFeature = CognigyAPIClient(
@@ -87,6 +92,12 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
     function_ids=function_ids,
     locale_ids=locale_ids
 )
+
+# --- Replace the feature bot specific ids with the original ids of the main agent ---
+mapping = read_json_files_in_directory("agent", main=True)
+mapping = read_json_files_in_directory("feature_agent copy", main=False, mapping=mapping)
+mapping[dev_branch_agent_id] = main_branch_agent_id
+replace_ids_in_json_files("feature_agent copy", mapping)
 
 # --- Git branch validation and commit logic ---
 try:

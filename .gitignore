@@ -47,3 +47,7 @@ local_test.py
 # Agent directories
 /agent
 /feature_agent
+bot_mapping.json
+feature_branch_agent_mapping.json
+test_change_ids.py
+local_test_flask.py
