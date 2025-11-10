@@ -95,7 +95,7 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
 
 # --- Replace the feature bot specific ids with the original ids of the main agent ---
 mapping = read_json_files_in_directory("agent", main=True)
-mapping = read_json_files_in_directory("feature_agent copy", main=False, mapping=mapping)
+mapping = read_json_files_in_directory(feature_agent_folder, main=False, mapping=mapping)
 mapping[dev_branch_agent_id] = main_branch_agent_id
 replace_ids_in_json_files("feature_agent copy", mapping)
 
