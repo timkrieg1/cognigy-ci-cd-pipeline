@@ -772,7 +772,7 @@ class CognigyAPIClient:
             )
             r.raise_for_status()
             ai_agent_data = r.json()
-            all_ai_agent_data[ai_agent_data["name"]]["config"] = ai_agent_data
+            all_ai_agent_data[ai_agent_data["name"]] = {"config": ai_agent_data}
 
             # --- Fetch jobs for each aiAgent ---
             r = self.session.get(
