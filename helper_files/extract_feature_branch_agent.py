@@ -101,12 +101,11 @@ mapping[feature_branch_agent_id] = main_branch_agent_id
 replace_ids_in_json_files(feature_agent_folder, mapping)
 
 # --- Replace the agent folder with the feature_agent folder ---
-
 if os.path.exists(agent_folder):
     shutil.rmtree(agent_folder)  # Remove the existing agent folder
-shutil.move(feature_agent_folder, agent_folder)  # Rename feature_agent to agent
+shutil.copytree(feature_agent_folder, agent_folder)  # Copy feature_agent to agent
 
-print(f"Replaced the '{agent_folder}' folder with the '{feature_agent_folder}' folder.")
+print(f"Replaced the '{agent_folder}' folder with the contents of the '{feature_agent_folder}' folder.")
 
 # --- Git branch validation and commit logic ---
 try:
