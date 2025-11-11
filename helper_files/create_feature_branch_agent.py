@@ -112,15 +112,15 @@ snapshot_name = CognigyAPIClientBase.download_snapshot(
 )
 
 # --- Create new development branch agent ---
-feature_branch_agent_id = CognigyAPIClientBase.create_dev_branch_agent(
+feature_branch_agent_id = CognigyAPIClientBase.create_feature_branch_agent(
     branch_desc=branch_desc,
     bot_name=bot_name,
     locale=locale
 )
 
-# --- Save dev_branch_agent_id to a JSON file ---
+# --- Save feature_branch_agent_id to a JSON file ---
 feature_branch_agent_info = {
-    "dev_branch_agent_id": feature_branch_agent_id
+    "feature_branch_agent_id": feature_branch_agent_id
 }
 with open("feature_branch_agent_id.json", "w") as json_file:
     json.dump(feature_branch_agent_info, json_file, indent=4)
@@ -183,7 +183,7 @@ subprocess.run(["git", "pull", remote_name, "main"], check=True)
 # Create new branch from main
 subprocess.run(["git", "checkout", "-b", branch_name], check=True)
 
-# Stage and commit new agent export and dev_branch_agent_info.json
+# Stage and commit new agent export and feature_branch_agent_info.json
 subprocess.run(["git", "add", agent_folder, "feature_branch_agent_id.json"], check=True)
 subprocess.run(["git", "commit", "-m", f"Created feature agent - {branch_name}"], check=True)
 

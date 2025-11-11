@@ -860,18 +860,19 @@ class CognigyAPIClient:
 
         print("Agent deployed successfully.")
 
-    def create_dev_branch_agent(self, branch_desc: str, bot_name: str, locale: Literal["de-DE", "en-US"]) -> str:
+    def create_feature_branch_agent(self, branch_desc: str, bot_name: str, locale: Literal["de-DE", "en-US"]) -> str:
         """
-        Creates a dev branch agent
+        Creates a feature branch agent
 
         Args:
-            dev_branch_name (str): The name of the development branch.
+            branch_desc (str): The name of the feature branch.
             bot_name (str): The name of the bot.
+            locale (str): The locale for the feature branch agent.
 
         Returns:
             project_id (str): The ID of the created development branch agent.
         """
-        branch_agent_name = f"Dev-Branch[{bot_name}][{branch_desc}]"
+        branch_agent_name = f"Feature-Branch[{bot_name}][{branch_desc}]"
 
         url = f"{self.base_url}/projects"
         post_body = {

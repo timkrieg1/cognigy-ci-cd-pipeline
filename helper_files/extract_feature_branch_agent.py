@@ -40,7 +40,7 @@ if os.path.exists(feature_agent_folder):
 # --- Read feature_branch_agent_id.json ---
 with open("feature_branch_agent_id.json", "r") as json_file:
     feature_branch_agent_info = json.load(json_file)
-    dev_branch_agent_id = feature_branch_agent_info["dev_branch_agent_id"]
+    feature_branch_agent_id = feature_branch_agent_info["feature_branch_agent_id"]
 # --- Read bot_mapping.json ---
 with open("bot_mapping.json", "r") as json_file:
     bot_mapping = json.load(json_file)
@@ -50,7 +50,7 @@ with open("bot_mapping.json", "r") as json_file:
 CognigyAPIClientFeature = CognigyAPIClient(
     base_url=base_url_dev,
     api_key=api_key_dev,
-    project_id=dev_branch_agent_id,
+    project_id=feature_branch_agent_id,
     bot_name=bot_name,
     locales=None,
     playbook_prefixes=None,
@@ -97,7 +97,7 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
 # --- Replace the feature bot specific ids with the original ids of the main agent ---
 mapping = read_json_files_in_directory(agent_folder, main=True)
 mapping = read_json_files_in_directory(feature_agent_folder, main=False, mapping=mapping)
-mapping[dev_branch_agent_id] = main_branch_agent_id
+mapping[feature_branch_agent_id] = main_branch_agent_id
 replace_ids_in_json_files(feature_agent_folder, mapping)
 
 # --- Replace the agent folder with the feature_agent folder ---
