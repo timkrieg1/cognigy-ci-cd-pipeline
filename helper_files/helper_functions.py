@@ -64,9 +64,9 @@ def extract_reference_id_mapping(json_obj, mapping, main, processed_ids):
                             main_id = mapping[ref_id]["mainId"]
                             mapping.pop(ref_id)  # Remove the referenceId entry
                             mapping[feature_id] = main_id  # Use featureId as key and mainId as value
-                            processed_ids.add(feature_id)  # Mark this featureId as processed
+                            processed_ids.add(ref_id)  # Mark this referenceId as processed
             else:
-                print(f"Skipping unhashable referenceId: {ref_id}")
+                print(f"Skipping unhashable referenceId: {ref_id}; JSON Obj: {json_obj}")
         for key, value in json_obj.items():
             extract_reference_id_mapping(value, mapping, main, processed_ids)
     elif isinstance(json_obj, list):
