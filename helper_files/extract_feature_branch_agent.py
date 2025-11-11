@@ -116,15 +116,15 @@ except subprocess.CalledProcessError:
     # Fail if the branch does not exist
     raise EnvironmentError(f"Branch '{branch_name}' does not exist. Ensure the branch is created before running this script.")
 
-# Add the updated agent folder and commit changes
+# Add all changes (including deletions) and commit
 try:
-    subprocess.run(["git", "add", agent_folder], check=True)  # Add the agent folder
+    subprocess.run(["git", "add", "--all"], check=True)  # Stage all changes
     commit_message = f"Replace '{agent_folder}' folder with updated contents"
     subprocess.run(["git", "commit", "-m", commit_message], check=True)
 
     # Push the changes to the branch
     subprocess.run(["git", "push", "-u", "origin", branch_name], check=True)
-    print(f"Successfully committed and pushed the folder '{agent_folder}' to the branch '{branch_name}'.")
+    print(f"Successfully committed and pushed all changes to the branch '{branch_name}'.")
 except subprocess.CalledProcessError as e:
-    print(f"An error occurred while committing or pushing the folder: {e}")
+    print(f"An error occurred while committing or pushing changes: {e}")
 
