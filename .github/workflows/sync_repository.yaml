@@ -1,0 +1,118 @@
+name: Sync Repository to Cognigy Agent
+on:
+  workflow_call:
+    inputs:
+      REPOSITORY:
+        description: 'Repository name'
+        required: true
+        type: string
+      CREATE_PULL_REQUEST:
+        description: 'Create pull request automatically (true/false as string)'
+        required: true
+        type: string
+        default: 'true'
+      BOT_NAME:
+        description: 'Bot name'
+        required: true
+        type: string
+      BOT_MAPPING_BASE64:
+        description: 'Base64 encoded bot mapping file'
+        required: true
+        type: string
+      COGNIGY_BASE_URL_DEV:
+        description: 'Cognigy base URL for development environment'
+        required: true
+        type: string
+      MAX_SNAPSHOTS:
+        description: 'Maximum number of snapshots in env'
+        required: true
+        type: string
+
+    secrets:
+      PAT_TOKEN:
+        description: 'GitHub Personal Access Token for creating pull requests'
+        required: true
+      COGNIGY_API_KEY_DEV:
+        description: 'Cognigy API key for development environment'
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+  
+jobs:
+  extract-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository (CI/CD pipeline repo)
+        uses: actions/checkout@v4
+        with:
+          repository: timkrieg1/cognigy-ci-cd-pipeline
+          path: pipeline-repo
+
+      - name: Checkout calling repository (bot repo)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.REPOSITORY }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: bot-repo
+
+      - name: Decode and create bot_mappings.json
+        run: |
+          echo "${{ inputs.BOT_MAPPING_BASE64 }}" | base64 -d > bot-repo/bot_mappings.json
+          echo "Created bot_mappings.json in bot-repo directory:"
+          cat bot-repo/bot_mappings.json
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r pipeline-repo/requirements.txt
+
+      - name: Configure Git for bot repository
+        run: |
+          cd bot-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
+
+      - name: Convert booleans and run Extraction Script
+        env:
+          BOT_NAME: ${{ inputs.BOT_NAME }}
+          COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
+          COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
+          COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
+          COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
+          MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
+          PYTHONUNBUFFERED: 1
+        run: |
+         
+          # Change to bot repository directory before running the script
+          cd bot-repo
+          python ../pipeline-repo/helper_files/sync_repository.py
+          
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install gh
+
+      - name: Create Pull Request
+        if: ${{ inputs.CREATE_PULL_REQUEST == 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.PAT_TOKEN }}
+        run: |
+          cd bot-repo
+          
+          # Create PR body by replacing placeholders
+          PR_BODY=$(cat ../.github/pull_request_template.md 2>/dev/null || echo "Automated PR created by CI/CD pipeline")
+          
+          gh pr create \
+            --repo ${{ inputs.REPOSITORY }} \
+            --title "Pull Request on $(git rev-parse --abbrev-ref HEAD)" \
+            --body "$PR_BODY" \
+            --base main \
+            --head "$(git rev-parse --abbrev-ref HEAD)" \
+            --label "automated-test"
