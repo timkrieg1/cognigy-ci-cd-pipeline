@@ -772,7 +772,7 @@ class CognigyAPIClient:
             )
             r.raise_for_status()
             ai_agent_data = r.json()
-            all_ai_agent_data[ai_agent_data["name"]] = {"config": ai_agent_data}
+            all_ai_agent_data[ai_agent_data["name"]]["config"] = ai_agent_data
 
             # --- Fetch jobs for each aiAgent ---
             r = self.session.get(
@@ -789,7 +789,7 @@ class CognigyAPIClient:
             ai_agent_path = os.path.join(output_path, ai_agent_name)
             os.makedirs(ai_agent_path, exist_ok=True)
             with open(f"{ai_agent_path}/config.json", "w", encoding="utf-8") as f:
-                json.dump(ai_agent_data, f, indent=4, ensure_ascii=False)
+                json.dump(ai_agent_data["config"], f, indent=4, ensure_ascii=False)
             # --- Create subdirectory for jobs ---
             ai_agent_jobs_path = os.path.join(output_path, f"{ai_agent_name}", "jobs")
             os.makedirs(ai_agent_jobs_path, exist_ok=True)
