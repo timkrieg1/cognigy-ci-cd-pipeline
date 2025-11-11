@@ -49,20 +49,24 @@ def extract_reference_id_mapping(json_obj, mapping, main, processed_ids):
     if isinstance(json_obj, dict):
         if "referenceId" in json_obj and "_id" in json_obj:
             ref_id = json_obj["referenceId"]
-            if ref_id not in processed_ids:
-                if ref_id not in mapping:
-                    mapping[ref_id] = {"mainId": "", "featureId": ""}
-                if main:
-                    mapping[ref_id]["mainId"] = json_obj["_id"]
-                else:
-                    mapping[ref_id]["featureId"] = json_obj["_id"]
-                    # If both mainId and featureId are present, transform the mapping
-                    if mapping[ref_id]["mainId"] and mapping[ref_id]["featureId"]:
-                        feature_id = mapping[ref_id]["featureId"]
-                        main_id = mapping[ref_id]["mainId"]
-                        mapping.pop(ref_id)  # Remove the referenceId entry
-                        mapping[feature_id] = main_id  # Use featureId as key and mainId as value
-                        processed_ids.add(ref_id)  # Mark this referenceId as processed
+            # Ensure ref_id is a hashable type (e.g., string)
+            if isinstance(ref_id, str):
+                if ref_id not in processed_ids:
+                    if ref_id not in mapping:
+                        mapping[ref_id] = {"mainId": "", "featureId": ""}
+                    if main:
+                        mapping[ref_id]["mainId"] = json_obj["_id"]
+                    else:
+                        mapping[ref_id]["featureId"] = json_obj["_id"]
+                        # If both mainId and featureId are present, transform the mapping
+                        if mapping[ref_id]["mainId"] and mapping[ref_id]["featureId"]:
+                            feature_id = mapping[ref_id]["featureId"]
+                            main_id = mapping[ref_id]["mainId"]
+                            mapping.pop(ref_id)  # Remove the referenceId entry
+                            mapping[feature_id] = main_id  # Use featureId as key and mainId as value
+                            processed_ids.add(ref_id)  # Mark this referenceId as processed
+            else:
+                print(f"Skipping unhashable referenceId: {ref_id}")
         for key, value in json_obj.items():
             extract_reference_id_mapping(value, mapping, main, processed_ids)
     elif isinstance(json_obj, list):
