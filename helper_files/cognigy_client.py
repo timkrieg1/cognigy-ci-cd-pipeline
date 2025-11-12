@@ -624,8 +624,7 @@ class CognigyAPIClient:
                 if "_id" in subobject:
                     del subobject["_id"]
                 if "node" in subobject:
-                    subobject["_id"] = subobject.pop("node")
-            
+                    subobject["_id"] = subobject.pop("node")           
 
             # --- Fetch each node in the chart and add it to the chart data ---
             chart_nodes_data = []
@@ -636,6 +635,10 @@ class CognigyAPIClient:
                 r.raise_for_status()
                 node_data = r.json()
                 node["_data"] = node_data
+
+                # --- Add the reference id to the top level object (Needed for postprocessing in merging) ---
+                node["referenceId"] = node["_data"]["referenceId"]
+
                 chart_nodes_data.append(node)
             flow_data["chart"] = chart_nodes_data
 

@@ -1,5 +1,5 @@
 from cognigy_client import CognigyAPIClient
-from helper_functions import read_json_files_in_directory, replace_ids_in_json_files
+from helper_functions import read_json_files_in_directory, replace_ids_in_json_files, replace_ids_in_feature_directory
 from dotenv import load_dotenv
 import os
 import sys
@@ -95,16 +95,13 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
 )
 
 # --- Replace the feature bot specific ids with the original ids of the main agent ---
-mapping = read_json_files_in_directory(agent_folder, main=True)
-mapping = read_json_files_in_directory(feature_agent_folder, main=False, mapping=mapping)
-mapping[feature_branch_agent_id] = main_branch_agent_id
-replace_ids_in_json_files(feature_agent_folder, mapping)
+replace_ids_in_feature_directory(agent_folder, feature_agent_folder, feature_branch_agent_id, main_branch_agent_id)
 
 # --- Replace the agent folder with the feature_agent folder ---
 if os.path.exists(agent_folder):
     shutil.rmtree(agent_folder)  # Remove the existing agent folder
 shutil.copytree(feature_agent_folder, agent_folder)  # Copy feature_agent to agent
-
+shutil.rmtree(feature_agent_folder)  # Remove the feature_agent folder after copying
 print(f"Replaced the '{agent_folder}' folder with the contents of the '{feature_agent_folder}' folder.")
 
 # --- Git branch validation and commit logic ---
