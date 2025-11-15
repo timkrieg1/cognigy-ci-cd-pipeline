@@ -101,11 +101,11 @@ def replace_ids_in_feature_directory(main_dir, feature_dir, feature_project_id, 
                     ref_id = obj.get('referenceId')
                     
                     if ref_id and ref_id in feature_mapping:
-                        obj.update(feature_mapping[ref_id])
+                        obj = feature_mapping[ref_id]
             elif isinstance(data, dict):  # Handle single object files
                 ref_id = data.get('referenceId')
                 if ref_id and ref_id in feature_mapping:
-                    data.update(feature_mapping[ref_id])
+                    data = feature_mapping[ref_id]
             f.seek(0)
             json.dump(data, f, indent=4)
             f.truncate()
