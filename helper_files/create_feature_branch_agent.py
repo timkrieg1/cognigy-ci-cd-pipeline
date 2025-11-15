@@ -148,7 +148,7 @@ CognigyAPIClientBranch.restore_snapshot(
 )
 
 # --- Git branch creation and commit logic ---
-branch_name = f"Feature/{bot_name}-{branch_desc.replace(" ", "-")}"
+branch_name = f"Feature/{bot_name}-{branch_desc.replace(' ', '-')}"
 
 # Detect CI/CD environment and configure git/remote dynamically
 if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
