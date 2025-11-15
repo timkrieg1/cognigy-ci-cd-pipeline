@@ -93,19 +93,27 @@ def replace_ids_in_feature_directory(main_dir, feature_dir, feature_project_id, 
     compare_and_replace_metadata(main_mapping, feature_mapping)
 
     # Step 5: Save updated feature mapping back to files
+    metadata_keys = {'createdAt', 'lastChanged', 'createdBy', 'lastChangedBy'}
     for file_path in feature_files:
         with open(file_path, 'r+', encoding='utf-8') as f:
             data = json.load(f)
             if isinstance(data, list):  # Ensure data is a list of objects
                 for obj in data:
                     ref_id = obj.get('referenceId')
-                    
                     if ref_id and ref_id in feature_mapping:
-                        obj = feature_mapping[ref_id]
+                        feature_obj = feature_mapping[ref_id]
+                        # Replace only metadata keys
+                        for key in metadata_keys:
+                            if key in feature_obj:
+                                obj[key] = feature_obj[key]
             elif isinstance(data, dict):  # Handle single object files
                 ref_id = data.get('referenceId')
                 if ref_id and ref_id in feature_mapping:
-                    data = feature_mapping[ref_id]
+                    feature_obj = feature_mapping[ref_id]
+                    # Replace only metadata keys
+                    for key in metadata_keys:
+                        if key in feature_obj:
+                            data[key] = feature_obj[key]
             f.seek(0)
             json.dump(data, f, indent=4)
             f.truncate()
