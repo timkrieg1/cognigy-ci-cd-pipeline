@@ -64,10 +64,10 @@ resource_endpoints = [
     "flows",
     "lexicons",
     "connections",
-    "nluConnectors",
-    "aiAgents",
-    "largeLanguageModels",
-    "knowledgeStores"
+    "nluconnectors",
+    "aiagents",
+    "largelanguagemodels",
+    "knowledgestores"
     "functions",
     "locales",
     "extensions"
