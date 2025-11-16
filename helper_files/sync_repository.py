@@ -63,7 +63,7 @@ resource_endpoints = [
     "nluconnectors",
     "aiagents",
     "largelanguagemodels",
-    "knowledgestores"
+    "knowledgestores",
     "functions",
     "locales",
     "extensions"
