@@ -863,9 +863,25 @@ class CognigyAPIClient:
             headers={"X-API-KEY": self.api_key}
         )
         r.raise_for_status()
+        task_id = r.json().get("_id", "")
+        print("Agent upload triggered.", flush=True)
 
-        print("Agent deployed successfully.")
+        # --- Poll for task completion
+        while True:
+            r = self.session.get(
+                url=f"{self.base_url}/tasks/{task_id}"
+            )
+            r.raise_for_status()
+            task_status = r.json().get("status", "active")
+            print(f"Current deployment task status: {task_status}", flush=True)
+            if task_status == "done":
+                break
+            if task_status != "active":
+                raise RuntimeError(f"Deployment task failed with status: {task_status}")
+            time.sleep(5)
 
+
+    
     def create_feature_branch_agent(self, branch_desc: str, bot_name: str, locale: Literal["de-DE", "en-US"]) -> str:
         """
         Creates a feature branch agent
