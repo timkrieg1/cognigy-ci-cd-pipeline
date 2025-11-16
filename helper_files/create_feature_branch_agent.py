@@ -71,13 +71,13 @@ resource_endpoints = [
 
 resource_ids = {}
 for endpoint in resource_endpoints:
-    if endpoint != "functions" and endpoint != "extenisons":
-        resource_ids[endpoint] = CognigyAPIClientBase.get_resource_ids(endpoint)
+    resource_ids[endpoint] = CognigyAPIClientBase.get_resource_ids(endpoint)
 
-# Flatten resource IDs for package resource list
+# Flatten resource IDs for package resource list excluding functions, extensions, and locales
 package_ressource_ids = [
     resource_id
-    for endpoint_ids in resource_ids.values()
+    for endpoint, endpoint_ids in resource_ids.items()
+    if endpoint not in ["functions", "extensions", "locales"]
     for resource_id in endpoint_ids
 ]
 
