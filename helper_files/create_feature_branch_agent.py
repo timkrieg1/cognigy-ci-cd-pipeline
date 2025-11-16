@@ -56,25 +56,28 @@ CognigyAPIClientBase = CognigyAPIClient(
 )
 
 #Start fetching data for package creation
-flow_ids = CognigyAPIClientBase.get_flow_ids()
-lexicon_ids = CognigyAPIClientBase.get_lexicon_ids()
-connection_ids = CognigyAPIClientBase.get_connection_ids()
-nlu_connector_ids = CognigyAPIClientBase.get_nluconnector_ids()
-ai_agent_ids = CognigyAPIClientBase.get_aiagent_ids()
-large_language_model_ids = CognigyAPIClientBase.get_largelanguagemodel_ids()
-knowledge_store_ids = CognigyAPIClientBase.get_knowledgestore_ids()
-function_ids = CognigyAPIClientBase.get_function_ids()
-locale_ids = CognigyAPIClientBase.get_locale_ids()
+resource_endpoints = [
+    "flows",
+    "lexicons",
+    "connections",
+    "nluConnectors",
+    "aiAgents",
+    "largeLanguageModels",
+    "knowledgeStores"
+    "functions",
+    "locales",
+    "extensions"
+]
 
-#Combine to package ressource list
+resource_ids = {}
+for endpoint in resource_endpoints:
+    resource_ids[endpoint] = CognigyAPIClientBase.get_resource_ids(endpoint)
+
+# Flatten resource IDs for package resource list
 package_ressource_ids = [
-    *flow_ids,
-    *lexicon_ids,
-    *connection_ids,
-    *nlu_connector_ids,
-    *ai_agent_ids,
-    *large_language_model_ids,
-    *knowledge_store_ids
+    resource_id
+    for endpoint_ids in resource_ids.values()
+    for resource_id in endpoint_ids
 ]
 
 #Create package
@@ -87,21 +90,22 @@ CognigyAPIClientBase.download_package()
 
 # --- Extract all agent ressources by ids ---
 CognigyAPIClientBase.extract_agent_resources_by_ids(
-    flow_ids=flow_ids,
-    lexicon_ids=lexicon_ids,
-    connection_ids=connection_ids,
-    nlu_connector_ids=nlu_connector_ids,
-    ai_agent_ids=ai_agent_ids,
-    large_language_model_ids=large_language_model_ids,
-    knowledge_store_ids=knowledge_store_ids,
-    function_ids=function_ids,
-    locale_ids=locale_ids
+    flow_ids=resource_ids.get("flows", []),
+    lexicon_ids=resource_ids.get("lexicons", []),
+    connection_ids=resource_ids.get("connections", []),
+    nlu_connector_ids=resource_ids.get("nluConnectors", []),
+    ai_agent_ids=resource_ids.get("aiAgents", []),
+    large_language_model_ids=resource_ids.get("largeLanguageModels", []),
+    knowledge_store_ids=resource_ids.get("knowledgeStores", []),
+    function_ids=resource_ids.get("functions", []),
+    locale_ids=resource_ids.get("locales", []),
+    extension_ids=resource_ids.get("extensions", [])
 )
 
-if not knowledge_store_ids is None and len(knowledge_store_ids) > 0:
+if not resource_ids.get("knowledgeStores", []) is None and len(resource_ids.get("knowledgeStores", [])) > 0:
     # --- Download knowledge store package ---
     CognigyAPIClientBase.create_package(
-        resource_ids=knowledge_store_ids
+        resource_ids=resource_ids.get("knowledgeStores", [])
     )
 
     CognigyAPIClientBase.download_package(knowledge_store=True)

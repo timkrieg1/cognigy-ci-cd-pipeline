@@ -87,7 +87,18 @@ class CognigyAPIClient:
                 break
 
         return all_items
-        
+
+    def get_resource_ids(self, endpoint) -> List[dict]:
+        """
+        Fetches all ids of the specified resource from the Cognigy API.
+        """
+        resource_ids = []
+        resources = self.get(endpoint)
+        # --- Collect all flow IDs ---
+        for resource in resources:
+            resource_ids.append(resource["_id"])
+        return resource_ids
+            
     def get_flow_ids(self) -> List[dict]:
         """
         Fetches all flows from the Cognigy API.
@@ -181,12 +192,23 @@ class CognigyAPIClient:
         """
         Fetches all locales from the Cognigy API.
         """
-        function_ids = []
-        functions = self.get("locales")
+        locale_ids = []
+        locales = self.get("locales")
         # --- Collect all function IDs ---
-        for function in functions:
-            function_ids.append(function["_id"])
-        return function_ids
+        for function in locales:
+            locale_ids.append(function["_id"])
+        return locale_ids
+    
+    def get_extension_ids(self) -> List[dict]:
+        """
+        Fetches all extensions from the Cognigy API.
+        """
+        extension_ids = []
+        extensions = self.get("extensions")
+        # --- Collect all function IDs ---
+        for function in extensions:
+            extension_ids.append(function["_id"])
+        return extension_ids
     
     @retry_on_500()
     def create_package(self, resource_ids: List[str]) -> dict:
@@ -536,7 +558,8 @@ class CognigyAPIClient:
         large_language_model_ids: list[str] = [],
         knowledge_store_ids: list[str] = [],
         function_ids: list[str] = [],
-        locale_ids: list[str] = []
+        locale_ids: list[str] = [],
+        extension_ids: list[str] = [],
     ):
         """
         Extracts agent resources by their IDs.
@@ -578,6 +601,10 @@ class CognigyAPIClient:
             print(f"Extracting {len(locale_ids)} locales...", flush=True)
             self.extract_resource_data(locale_ids, output_path=f"{self.folder_name}/locales", endpoint="locales")
             print("Locales extraction complete.", flush=True)
+        if len(extension_ids) >0:
+            print(f"Extracting {len(extension_ids)} extensions...", flush=True)
+            self.extract_resource_data(extension_ids, output_path=f"{self.folder_name}/extensions", endpoint="extensions")
+            print("Extensions extraction complete.", flush=True)
 
         print("All agent resources have been extracted successfully.", flush=True)
     

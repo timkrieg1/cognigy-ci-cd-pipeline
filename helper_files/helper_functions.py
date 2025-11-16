@@ -242,7 +242,10 @@ def replace_ids_in_feature_directory(main_dir, feature_dir, feature_project_id, 
     # Step 3: Replace IDs in feature mapping
     replace_ids_in_files(feature_dir, id_mapping)
 
-    # Step 4: Compare and replace metadata
+    # Step 4: Replace IDs in Lexicons according to custom logic
+    replace_lexicon_ids(feature_dir, main_dir)
+
+    # Step 5: Compare and replace metadata
     replace_metadata_in_files(feature_dir, main_mapping)
 
 def replace_ids_in_files(directory, id_mapping):
@@ -272,3 +275,75 @@ def replace_ids_in_files(directory, id_mapping):
                     print(f"Skipping invalid JSON file: {file_path}")
                 except Exception as e:
                     print(f"An error occurred while processing file {file_path}: {e}")
+
+def replace_lexicon_ids(feature_dir, main_dir):
+    """
+    Replaces lexicon value IDs in the feature directory with matching IDs from the main directory
+    based on keyphrase comparison.
+
+    Args:
+        feature_dir (str): Path to the feature agent directory containing lexicons.
+        main_dir (str): Path to the main agent directory containing lexicons.
+    """
+    feature_lexicons_path = os.path.join(feature_dir, "lexicons")
+    main_lexicons_path = os.path.join(main_dir, "lexicons")
+
+    # Load lexicons from both directories by referenceId
+    feature_lexicons = load_lexicons_by_reference_id(feature_lexicons_path)
+    main_lexicons = load_lexicons_by_reference_id(main_lexicons_path)
+
+    # Iterate over feature lexicons and compare with main lexicons
+    for reference_id, feature_lexicon in feature_lexicons.items():
+        main_lexicon = main_lexicons.get(reference_id)
+        if not main_lexicon:
+            continue  # Skip if no matching referenceId in main lexicons
+
+        # Compare values in both lexicons
+        feature_values = feature_lexicon.get("values", [])
+        main_values = main_lexicon.get("values", [])
+
+        for feature_value in feature_values:
+            feature_keyphrase = feature_value.get("keyphrase")
+            if not feature_keyphrase:
+                continue  # Skip if no keyphrase in the feature value
+
+            # Find a matching keyphrase in the main lexicon
+            for main_value in main_values:
+                if main_value.get("keyphrase") == feature_keyphrase:
+                    # Replace the _id in the feature lexicon with the _id from the main lexicon
+                    feature_value["_id"] = main_value["_id"]
+                    break
+
+    # Save the updated feature lexicons back to their files
+    for reference_id, feature_lexicon in feature_lexicons.items():
+        feature_lexicon_path = os.path.join(feature_lexicons_path, f"{feature_lexicon['name']}.json")
+        with open(feature_lexicon_path, "w", encoding="utf-8") as f:
+            json.dump(feature_lexicon, f, indent=4, ensure_ascii=False)
+
+
+def load_lexicons_by_reference_id(directory):
+    """
+    Loads all lexicons from a directory and organizes them by referenceId.
+
+    Args:
+        directory (str): Path to the directory containing lexicon JSON files.
+
+    Returns:
+        dict: A dictionary where keys are referenceIds and values are lexicon objects.
+    """
+    lexicons = {}
+    if not os.path.exists(directory):
+        return lexicons
+
+    for file_name in os.listdir(directory):
+        if file_name.endswith(".json"):
+            file_path = os.path.join(directory, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    lexicon = json.load(f)
+                    reference_id = lexicon.get("referenceId")
+                    if reference_id:
+                        lexicons[reference_id] = lexicon
+            except json.JSONDecodeError:
+                print(f"Skipping invalid JSON file: {file_path}")
+    return lexicons

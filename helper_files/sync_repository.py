@@ -56,25 +56,28 @@ CognigyAPIClientDev = CognigyAPIClient(
 )
 
 #Start fetching data for package creation
-flow_ids = CognigyAPIClientDev.get_flow_ids()
-lexicon_ids = CognigyAPIClientDev.get_lexicon_ids()
-connection_ids = CognigyAPIClientDev.get_connection_ids()
-nlu_connector_ids = CognigyAPIClientDev.get_nluconnector_ids()
-ai_agent_ids = CognigyAPIClientDev.get_aiagent_ids()
-large_language_model_ids = CognigyAPIClientDev.get_largelanguagemodel_ids()
-knowledge_store_ids = CognigyAPIClientDev.get_knowledgestore_ids()
-function_ids = CognigyAPIClientDev.get_function_ids()
-locale_ids = CognigyAPIClientDev.get_locale_ids()
+resource_endpoints = [
+    "flows",
+    "lexicons",
+    "connections",
+    "nluConnectors",
+    "aiAgents",
+    "largeLanguageModels",
+    "knowledgeStores"
+    "functions",
+    "locales",
+    "extensions"
+]
 
-#Combine to package ressource list
+resource_ids = {}
+for endpoint in resource_endpoints:
+    resource_ids[endpoint] = CognigyAPIClientDev.get_resource_ids(endpoint)
+
+# Flatten resource IDs for package resource list
 package_ressource_ids = [
-    *flow_ids,
-    *lexicon_ids,
-    *connection_ids,
-    *nlu_connector_ids,
-    *ai_agent_ids,
-    *large_language_model_ids,
-    *knowledge_store_ids
+    resource_id
+    for endpoint_ids in resource_ids.values()
+    for resource_id in endpoint_ids
 ]
 
 #Create package
@@ -90,15 +93,16 @@ snapshot_name = CognigyAPIClientDev.download_snapshot(
 
 # --- Extract all agent ressources by ids ---
 CognigyAPIClientDev.extract_agent_resources_by_ids(
-    flow_ids=flow_ids,
-    lexicon_ids=lexicon_ids,
-    connection_ids=connection_ids,
-    nlu_connector_ids=nlu_connector_ids,
-    ai_agent_ids=ai_agent_ids,
-    large_language_model_ids=large_language_model_ids,
-    knowledge_store_ids=knowledge_store_ids,
-    function_ids=function_ids,
-    locale_ids=locale_ids
+    flow_ids=resource_ids.get("flows", []),
+    lexicon_ids=resource_ids.get("lexicons", []),
+    connection_ids=resource_ids.get("connections", []),
+    nlu_connector_ids=resource_ids.get("nluConnectors", []),
+    ai_agent_ids=resource_ids.get("aiAgents", []),
+    large_language_model_ids=resource_ids.get("largeLanguageModels", []),
+    knowledge_store_ids=resource_ids.get("knowledgeStores", []),
+    function_ids=resource_ids.get("functions", []),
+    locale_ids=resource_ids.get("locales", []),
+    extension_ids=resource_ids.get("extensions", [])
 )
 
 # --- Git branch creation and commit logic ---
