@@ -34,102 +34,6 @@ def clean_base_url(base_url: str) -> str:
     # --- Remove trailing slashes and '/new' from base URL ---
     return re.sub(r'/new/?$|/$', '', base_url.strip())
 
-def extract_reference_id_mapping(json_obj, mapping, main, processed_ids):
-    """
-    Recursively iterates over a JSON object or list to find subobjects containing 'referenceId' and '_id'.
-    Updates the mapping based on the 'main' parameter. If 'main' is False and both 'mainId' and 'featureId'
-    are present, the mapping is transformed to include metadata fields and the entire object.
-    
-    Args:
-        json_obj (dict or list): The JSON object or list to iterate over.
-        mapping (dict): The dictionary to store referenceId -> {"mainId": "", "featureId": "", "createdAt": "", ...} mappings.
-        main (bool): If True, assigns the '_id' to 'mainId'. Otherwise, assigns it to 'featureId'.
-        processed_ids (set): A set to track referenceIds that have already been transformed.
-    """
-    if isinstance(json_obj, dict):
-        if "referenceId" in json_obj and "_id" in json_obj:
-            ref_id = json_obj["referenceId"]
-            # Ensure ref_id is a hashable type (e.g., string)
-            if isinstance(ref_id, str):
-                if ref_id not in processed_ids:
-                    if ref_id not in mapping:
-                        mapping[ref_id] = {
-                            "mainId": "",
-                            "featureId": "",
-                            "createdAt": "",
-                            "createdBy": "",
-                            "lastChanged": "",
-                            "lastChangedBy": "",
-                            "originalObject": {}
-                        }
-                    if main:
-                        mapping[ref_id]["mainId"] = json_obj["_id"]
-                    else:
-                        mapping[ref_id]["featureId"] = json_obj["_id"]
-                    for key in ["createdAt", "createdBy", "lastChanged", "lastChangedBy"]:
-                        if key in json_obj:
-                            mapping[ref_id][key] = json_obj[key]
-        for key, value in json_obj.items():
-            extract_reference_id_mapping(value, mapping, main, processed_ids)
-    elif isinstance(json_obj, list):
-        for item in json_obj:
-            extract_reference_id_mapping(item, mapping, main, processed_ids)
-
-def read_json_files_in_directory(folder_path: str, main: bool, mapping=None):
-    """
-    Recursively iterates over a directory and reads all JSON files inside it.
-    Extracts 'referenceId' and '_id' mappings from the JSON content.
-    Updates the mapping based on the 'main' parameter. If 'main' is False and both 'mainId' and 'featureId'
-    are present, the mapping is transformed to use 'featureId' as the key and 'mainId' as the value.
-    
-    Args:
-        folder_path (str): Path to the folder to iterate over.
-        main (bool): If True, assigns '_id' to 'mainId'. Otherwise, assigns it to 'featureId'.
-        mapping (dict, optional): An existing dictionary to store referenceId -> {"mainId": "", "featureId": ""} mappings.
-                                   If None, a new dictionary will be created.
-    
-    Returns:
-        dict: A dictionary of featureId -> mainId mappings if 'main' is False and both IDs are present.
-              Otherwise, a dictionary of referenceId -> {"mainId": "", "featureId": ""}.
-    """
-    if mapping is None:
-        mapping = {}
-    processed_ids = set()  # Track processed referenceIds
-    for root, _, files in os.walk(folder_path):
-        for file in files:
-            if file.endswith(".json"):
-                file_path = os.path.join(root, file)
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-                        # Handle both dict and list as the top-level JSON structure
-                        extract_reference_id_mapping(data, mapping, main, processed_ids)
-                except json.JSONDecodeError:
-                    print(f"Skipping invalid JSON file: {file_path}")
-    return mapping
-
-def replace_feature_ids(obj, id_mapping):
-    """
-    Recursively replaces all occurrences of featureIds with mainIds in a JSON object, regardless of the key name.
-    
-    Args:
-        obj (dict or list): The JSON object to process.
-        id_mapping (dict): The mapping of featureIds to mainIds and metadata.
-    
-    Returns:
-        The updated JSON object with featureIds replaced.
-    """
-    if isinstance(obj, dict):
-        for key, value in obj.items():
-            if isinstance(value, (dict, list)):
-                obj[key] = replace_feature_ids(value, id_mapping)
-            elif isinstance(value, str) and value in id_mapping and id_mapping[value]["mainId"]:
-                obj[key] = id_mapping[value]["mainId"]  # Replace featureId with mainId
-    elif isinstance(obj, list):
-        for i in range(len(obj)):
-            obj[i] = replace_feature_ids(obj[i], id_mapping)
-    return obj
-
 def replace_metadata_in_files(directory, main_mapping):
     """
     Iterates over all JSON files in a directory and replaces metadata fields if objects are identical
@@ -181,6 +85,10 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
         if reference_id and reference_id in main_mapping:
             main_object = main_mapping[reference_id].get('objectData')
             if main_object:
+                if "chartReference" in main_object:
+                    obj["chartReference"] = main_object["chartReference"]
+                if "intentTrainGroupReference" in main_object:
+                    obj["intentTrainGroupReference"] = main_object["intentTrainGroupReference"]
                 # Compare the object with the main object, excluding metadata keys
                 obj_without_metadata = {k: v for k, v in obj.items() if k not in metadata_keys}
                 main_object_without_metadata = {k: v for k, v in main_object.items() if k not in metadata_keys}
@@ -190,6 +98,7 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
                     for key in metadata_keys:
                         if key in main_object:
                             obj[key] = main_object[key]
+
 
         # Recursively process all keys in the object
         for key, value in obj.items():
@@ -268,16 +177,29 @@ def create_id_mapping(main_mapping, feature_mapping):
     return id_mapping
 
 def replace_ids(data, id_mapping):
-    """Replace all occurrences of feature _id with main _id in the data."""
+    """
+    Replace all occurrences of feature _id with main _id in the data.
+
+    Args:
+        data (dict, list, or str): The JSON data to process.
+        id_mapping (dict): A dictionary where keys are feature IDs and values are main IDs.
+    """
     if isinstance(data, dict):
         for key, value in data.items():
             if isinstance(value, str) and value in id_mapping:
+                # Replace string value if it matches an ID in the mapping
                 data[key] = id_mapping[value]
             else:
+                # Recursively process nested structures
                 replace_ids(value, id_mapping)
     elif isinstance(data, list):
-        for item in data:
-            replace_ids(item, id_mapping)
+        for i in range(len(data)):
+            if isinstance(data[i], str) and data[i] in id_mapping:
+                # Replace string value in the list if it matches an ID in the mapping
+                data[i] = id_mapping[data[i]]
+            else:
+                # Recursively process nested structures
+                replace_ids(data[i], id_mapping)
 
 def compare_and_replace_metadata(main_mapping, feature_mapping):
     """Compare objects and replace metadata fields if objects are otherwise identical."""
