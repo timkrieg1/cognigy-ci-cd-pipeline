@@ -71,7 +71,8 @@ resource_endpoints = [
 
 resource_ids = {}
 for endpoint in resource_endpoints:
-    resource_ids[endpoint] = CognigyAPIClientDev.get_resource_ids(endpoint)
+    if endpoint != "functions" and endpoint != "extenisons":
+        resource_ids[endpoint] = CognigyAPIClientDev.get_resource_ids(endpoint)
 
 # Flatten resource IDs for package resource list
 package_ressource_ids = [
