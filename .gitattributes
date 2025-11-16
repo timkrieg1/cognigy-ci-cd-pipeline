@@ -1,0 +1,2 @@
+agent/extensions/*.json -text
+feature_agent/extensions/*.json -text
