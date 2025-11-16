@@ -416,6 +416,7 @@ class CognigyAPIClient:
                         if snapshot_size == previous_snapshot_size:
                             print("Snapshot downloaded successfully.", flush=True)
                             break
+                        previous_snapshot_size = snapshot_size
                         print(f"Snapshot size differed. Trying again: {os.path.getsize(snapshot_path)} bytes", flush=True)
                         
                         
