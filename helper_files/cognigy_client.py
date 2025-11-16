@@ -397,12 +397,13 @@ class CognigyAPIClient:
             download_link = response.json().get("downloadLink", "")
             print("Attempting to download snapshot...", flush=True)
 
-            with self.session.get(download_link, stream=True) as r:
-                r.raise_for_status()
-                with open(snapshot_path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
+            while True:
+                with self.session.get(download_link, stream=True) as r:
+                    r.raise_for_status()
+                    with open(snapshot_path, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
 
                 # --- Check if the file only contains the text 'csnap' ---
                 with open(snapshot_path, "rb") as f:
@@ -411,10 +412,27 @@ class CognigyAPIClient:
                         print("Downloaded file is placeholder 'csnap', retrying in 5 seconds...", flush=True)
                         time.sleep(5)
                         continue
-                    else:
-                        print(f"File size: {os.path.getsize(snapshot_path)} bytes", flush=True)
-                        print("Snapshot downloaded successfully.", flush=True)
-                        break
+
+                # --- Compare file sizes ---
+                initial_size = os.path.getsize(snapshot_path)
+                print(f"Initial file size: {initial_size} bytes", flush=True)
+                time.sleep(5)  # Wait for a few seconds before downloading again
+
+                with self.session.get(download_link, stream=True) as r:
+                    r.raise_for_status()
+                    with open(snapshot_path, "wb") as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            if chunk:
+                                f.write(chunk)
+
+                new_size = os.path.getsize(snapshot_path)
+                print(f"New file size: {new_size} bytes", flush=True)
+
+                if initial_size == new_size:
+                    print("Snapshot downloaded successfully and file size is stable.", flush=True)
+                    break
+                else:
+                    print("File sizes differ, retrying download...", flush=True)
         return self.snapshot_name
     
     @retry_on_500()
