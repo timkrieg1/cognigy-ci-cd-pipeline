@@ -91,9 +91,9 @@ CognigyAPIClientFeature.extract_agent_resources_by_ids(
     lexicon_ids=resource_ids.get("lexicons", []),
     connection_ids=resource_ids.get("connections", []),
     nlu_connector_ids=resource_ids.get("nluConnectors", []),
-    ai_agent_ids=resource_ids.get("aiAgents", []),
-    large_language_model_ids=resource_ids.get("largeLanguageModels", []),
-    knowledge_store_ids=resource_ids.get("knowledgeStores", []),
+    ai_agent_ids=resource_ids.get("aiagents", []),
+    large_language_model_ids=resource_ids.get("largelanguagemodels", []),
+    knowledge_store_ids=resource_ids.get("knowledgestores", []),
     function_ids=resource_ids.get("functions", []),
     locale_ids=resource_ids.get("locales", []),
     extension_ids=resource_ids.get("extensions", [])
