@@ -412,6 +412,7 @@ class CognigyAPIClient:
                         time.sleep(5)
                         continue
                     else:
+                        print(f"File size: {os.path.getsize(snapshot_path)} bytes", flush=True)
                         print("Snapshot downloaded successfully.", flush=True)
                         break
         return self.snapshot_name
