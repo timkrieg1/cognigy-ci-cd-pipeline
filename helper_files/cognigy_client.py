@@ -531,9 +531,9 @@ class CognigyAPIClient:
         knowledge_store_ids: list[str] = [],
         function_ids: list[str] = [],
         locale_ids: list[str] = []
-    ) -> dict:
+    ):
         """
-        Extracts agent resources by their IDs and returns them in a dictionary.
+        Extracts agent resources by their IDs.
         """
 
         if len(flow_ids) > 0:
@@ -624,7 +624,8 @@ class CognigyAPIClient:
                 if "_id" in subobject:
                     del subobject["_id"]
                 if "node" in subobject:
-                    subobject["_id"] = subobject.pop("node")           
+                    subobject["_id"] = subobject.pop("node")      
+
 
             # --- Fetch each node in the chart and add it to the chart data ---
             chart_nodes_data = []
@@ -638,6 +639,8 @@ class CognigyAPIClient:
 
                 # --- Add the reference id to the top level object (Needed for postprocessing in merging) ---
                 node["referenceId"] = node["_data"]["referenceId"]
+                node["_data"].pop("_id")
+                node["_data"].pop("referenceId")    
 
                 chart_nodes_data.append(node)
             flow_data["chart"] = chart_nodes_data
