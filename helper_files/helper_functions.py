@@ -254,6 +254,9 @@ def replace_ids_in_feature_directory(main_dir, feature_dir, feature_project_id, 
     # Step 5: Replace intent slot ids according to custom logic
     replace_slot_ids(feature_dir, main_dir)
 
+    # Step 6: Replace ids in extenions according to custom logic
+    replace_extension_ids(feature_dir, main_dir)
+
     # Step 6: Compare and replace metadata
     replace_metadata_in_files(feature_dir, main_mapping)
 
@@ -420,3 +423,151 @@ def replace_slot_ids(feature_dir, main_dir):
         # Save the updated intents.json back to the feature directory
         with open(feature_intents_path, "w", encoding="utf-8") as f:
             json.dump(feature_intents, f, indent=4, ensure_ascii=False)
+
+def replace_extension_ids(feature_dir, main_dir):
+    """
+    Replaces extension IDs in the feature directory with matching IDs from the main directory
+    based on name comparison. Also updates _id in nodes and connections recursively.
+
+    Args:
+        feature_dir (str): Path to the feature agent directory containing extensions.
+        main_dir (str): Path to the main agent directory containing extensions.
+    """
+    feature_extensions_path = os.path.join(feature_dir, "extensions")
+    main_extensions_path = os.path.join(main_dir, "extensions")
+
+    # Load extensions from both directories by name
+    feature_extensions = load_extensions_by_name(feature_extensions_path)
+    main_extensions = load_extensions_by_name(main_extensions_path)
+
+    # Iterate over feature extensions and compare with main extensions
+    for name, feature_extension in feature_extensions.items():
+        main_extension = main_extensions.get(name)
+        if not main_extension:
+            continue  # Skip if no matching name in main extensions
+
+        # Replace the _id in the feature extension with the _id from the main extension
+        feature_extension["_id"] = main_extension["_id"]
+        feature_extension["imageUrlToken"] = main_extension["imageUrlToken"]
+
+        # Check if the feature extension export was created and changed at the same time
+        if feature_extension.get("createdAt") == feature_extension.get("lastChanged"):
+            feature_extension["lastChangedBy"] = main_extension["lastChangedBy"]
+            feature_extension["lastChanged"] = main_extension["lastChanged"]
+
+        # Replace createdBy and createdAt
+        feature_extension["createdBy"] = main_extension["createdBy"]
+        feature_extension["createdAt"] = main_extension["createdAt"]
+
+        # Recursively update _id in nodes and connections
+        if "nodes" in feature_extension and "nodes" in main_extension:
+            update_ids_recursively(
+                feature_extension["nodes"],
+                main_extension["nodes"],
+                key_to_match="defaultLabel"
+            )
+        if "connections" in feature_extension and "connections" in main_extension:
+            update_ids_recursively(
+                feature_extension["connections"],
+                main_extension["connections"],
+                key_to_match="fieldName"
+            )
+
+    # Save the updated feature extensions back to their files
+    for name, feature_extension in feature_extensions.items():
+        feature_extension_path = os.path.join(feature_extensions_path, f"{name}.json")
+        with open(feature_extension_path, "w", encoding="utf-8") as f:
+            json.dump(feature_extension, f, indent=4, ensure_ascii=False)
+
+
+def update_ids_recursively(feature_objects, main_objects, key_to_match):
+    """
+    Recursively updates _id in feature objects based on matching key values in main objects.
+
+    Args:
+        feature_objects (list or dict): The feature objects to update.
+        main_objects (list or dict): The main objects to compare against.
+        key_to_match (str): The key to use for matching (e.g., "defaultLabel" or "fieldName").
+
+    Returns:
+        The modified feature_objects with updated _id values.
+    """
+    def find_matching_object(main_objects, key, value):
+        """
+        Recursively searches for an object in main_objects where the given key matches the given value.
+
+        Args:
+            main_objects (list or dict): The main objects to search.
+            key (str): The key to match.
+            value: The value to match.
+
+        Returns:
+            dict or None: The matching object, or None if no match is found.
+        """
+        if isinstance(main_objects, list):
+            for obj in main_objects:
+                if isinstance(obj, dict):
+                    if obj.get(key) == value:
+                        return obj
+                    # Recursively search in nested structures
+                    result = find_matching_object(obj, key, value)
+                    if result:
+                        return result
+        elif isinstance(main_objects, dict):
+            for k, v in main_objects.items():
+                if isinstance(v, dict) and v.get(key) == value:
+                    return v
+                elif isinstance(v, (dict, list)):
+                    # Recursively search in nested structures
+                    result = find_matching_object(v, key, value)
+                    if result:
+                        return result
+        return None
+
+    if isinstance(feature_objects, list):
+        for i in range(len(feature_objects)):
+            if isinstance(feature_objects[i], (dict, list)):
+                # Recursively process each item in the list
+                feature_objects[i] = update_ids_recursively(feature_objects[i], main_objects, key_to_match)
+    elif isinstance(feature_objects, dict):
+        # Check if the object has an _id and the matching key
+        if "_id" in feature_objects and key_to_match in feature_objects:
+            matching_main_obj = find_matching_object(main_objects, key_to_match, feature_objects[key_to_match])
+            if matching_main_obj:
+                # Replace the _id if a match is found
+                feature_objects["_id"] = matching_main_obj["_id"]
+
+        # Recursively process all keys in the object
+        for key, value in feature_objects.items():
+            if isinstance(value, (dict, list)):
+                feature_objects[key] = update_ids_recursively(value, main_objects, key_to_match)
+
+    return feature_objects
+
+
+def load_extensions_by_name(directory):
+    """
+    Loads all extensions from a directory and organizes them by name.
+
+    Args:
+        directory (str): Path to the directory containing extension JSON files.
+
+    Returns:
+        dict: A dictionary where keys are extension names and values are extension objects.
+    """
+    extensions = {}
+    if not os.path.exists(directory):
+        return extensions
+
+    for file_name in os.listdir(directory):
+        if file_name.endswith(".json"):
+            file_path = os.path.join(directory, file_name)
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    extension = json.load(f)
+                    name = extension.get("name")
+                    if name:
+                        extensions[name] = extension
+            except json.JSONDecodeError:
+                print(f"Skipping invalid JSON file: {file_path}")
+    return extensions
