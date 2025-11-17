@@ -31,8 +31,8 @@ def clean_base_url(base_url: str) -> str:
     """
     Cleans the base URL by removing trailing slashes.
     """
-    # --- Remove trailing slashes and '/new' from base URL ---
-    return re.sub(r'/new/?$|/$', '', base_url.strip())
+    # --- Remove trailing slashes and "/new" from base URL ---
+    return re.sub(r"/new/?$|/$", "", base_url.strip())
 
 def replace_metadata_in_files(directory, main_mapping):
     """
@@ -43,21 +43,21 @@ def replace_metadata_in_files(directory, main_mapping):
         directory (str): Path to the directory containing JSON files.
         main_mapping (dict): A dictionary where keys are referenceIds and values are dictionaries with "objectData".
     """
-    metadata_keys = {'createdAt', 'lastChanged', 'createdBy', 'lastChangedBy'}
+    metadata_keys = {"lastChanged", "lastChangedBy"}
 
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith('.json'):
+            if file.endswith(".json"):
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
 
                     # Process the JSON data
                     updated_data = replace_metadata_in_object(data, main_mapping, metadata_keys)
 
                     # Write the updated data back to the file
-                    with open(file_path, 'w', encoding='utf-8') as f:
+                    with open(file_path, "w", encoding="utf-8") as f:
                         json.dump(updated_data, f, indent=4, ensure_ascii=False)
 
                 except json.JSONDecodeError:
@@ -81,9 +81,13 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
     """
     if isinstance(obj, dict):
         # Check if the object has a referenceId
-        reference_id = obj.get('referenceId')
+        reference_id = obj.get("referenceId")
         if reference_id and reference_id in main_mapping:
-            main_object = main_mapping[reference_id].get('objectData')
+            if "createdAt" in main_object:
+                obj["createdAt"] = main_object["createdAt"]
+            if "createdBy" in main_object:
+                obj["createdBy"] = main_object["createdBy"]
+            main_object = main_mapping[reference_id].get("objectData")
             if main_object:
                 if "chartReference" in main_object:
                     obj["chartReference"] = main_object["chartReference"]
@@ -116,7 +120,7 @@ def traverse_directory(directory):
     json_files = []
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith('.json'):
+            if file.endswith(".json"):
                 json_files.append(os.path.join(root, file))
     return json_files
 
@@ -126,7 +130,7 @@ def load_json_files(file_paths):
         """Recursively extract objects with a referenceId from nested structures."""
         objects = []
         if isinstance(data, dict):
-            if 'referenceId' in data:
+            if "referenceId" in data:
                 objects.append(data)
             for value in data.values():
                 objects.extend(extract_objects(value))
@@ -137,11 +141,11 @@ def load_json_files(file_paths):
 
     mapping = {}
     for file_path in file_paths:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
             objects = extract_objects(data)
             for obj in objects:
-                reference_id = obj.get('referenceId')
+                reference_id = obj.get("referenceId")
                 if reference_id and reference_id not in mapping:
                     extracted_values = {
                         "_id": obj.get("_id"),
@@ -155,14 +159,14 @@ def extract_flow_setting_ids(flows_file_path):
     flow_setting_ids = {}
     for flow in os.listdir(flows_file_path):
         flow_metadata_file_path = os.path.join(flows_file_path, flow, "metadata/metadata.json")
-        with open(flow_metadata_file_path, 'r', encoding='utf-8') as flow_metadata_file:
+        with open(flow_metadata_file_path, "r", encoding="utf-8") as flow_metadata_file:
             flow_metadata = json.load(flow_metadata_file)
-            flow_ref_id = flow_metadata.get('referenceId')
+            flow_ref_id = flow_metadata.get("referenceId")
 
         flow_settings_file_path = os.path.join(flows_file_path, flow, "settings/settings.json")
-        with open(flow_settings_file_path, 'r', encoding='utf-8') as flow_settings_file:
+        with open(flow_settings_file_path, "r", encoding="utf-8") as flow_settings_file:
             flow_settings = json.load(flow_settings_file)
-            flow_setting_id = flow_settings.get('_id')
+            flow_setting_id = flow_settings.get("_id")
         flow_setting_ids[flow_ref_id] = flow_setting_id
 
     return flow_setting_ids
@@ -172,8 +176,8 @@ def create_id_mapping(main_mapping, feature_mapping):
     id_mapping = {}
     for ref_id, main_obj in main_mapping.items():
         feature_obj = feature_mapping.get(ref_id)
-        if feature_obj and '_id' in main_obj and '_id' in feature_obj:
-            id_mapping[feature_obj['_id']] = main_obj['_id']
+        if feature_obj and "_id" in main_obj and "_id" in feature_obj:
+            id_mapping[feature_obj["_id"]] = main_obj["_id"]
     return id_mapping
 
 def replace_ids(data, id_mapping):
@@ -203,7 +207,7 @@ def replace_ids(data, id_mapping):
 
 def compare_and_replace_metadata(main_mapping, feature_mapping):
     """Compare objects and replace metadata fields if objects are otherwise identical."""
-    metadata_keys = {'createdAt', 'lastChanged', 'createdBy', 'lastChangedBy'}
+    metadata_keys = {"createdAt", "lastChanged", "createdBy", "lastChangedBy"}
     for ref_id, main_obj in main_mapping.items():
         feature_obj = feature_mapping.get(ref_id)
         if feature_obj:
@@ -261,17 +265,17 @@ def replace_ids_in_files(directory, id_mapping):
     """
     for root, _, files in os.walk(directory):
         for file in files:
-            if file.endswith('.json'):
+            if file.endswith(".json"):
                 file_path = os.path.join(root, file)
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         data = json.load(f)
 
-                    # Replace IDs in the file's data
+                    # Replace IDs in the file"s data
                     replace_ids(data, id_mapping)
 
                     # Write the updated data back to the file
-                    with open(file_path, 'w', encoding='utf-8') as f:
+                    with open(file_path, "w", encoding="utf-8") as f:
                         json.dump(data, f, indent=4, ensure_ascii=False)
 
                 except json.JSONDecodeError:
