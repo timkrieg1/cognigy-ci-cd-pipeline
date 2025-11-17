@@ -41,14 +41,21 @@ Thumbs.db
 
 # Local test files
 local_test.py
+test_change_ids.py
+local_test_flask.py
+test_change_ids.py
+local_test_create.py
+local_test_sync.py
 
+# Text files
 *.txt
 
 # Agent directories
 /agent
 /feature_agent
+
+#Bot Id mapping files
 bot_mapping.json
-feature_branch_agent_mapping.json
-test_change_ids.py
-local_test_flask.py
-test_change_ids.py
+feature_branch_agent_id.json
+
+
