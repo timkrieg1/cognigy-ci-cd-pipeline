@@ -828,7 +828,7 @@ class CognigyAPIClient:
             ai_agent_path = os.path.join(output_path, ai_agent_name)
             os.makedirs(ai_agent_path, exist_ok=True)
             with open(f"{ai_agent_path}/config.json", "w", encoding="utf-8") as f:
-                json.dump(ai_agent_data["config"], f, indent=4, ensure_ascii=False)
+                json.dump(ai_agent_data["config"], f, indent=4, ensure_ascii=False, sort_keys=True)
             # --- Create subdirectory for jobs ---
             ai_agent_jobs_path = os.path.join(output_path, f"{ai_agent_name}", "jobs")
             os.makedirs(ai_agent_jobs_path, exist_ok=True)
