@@ -450,8 +450,8 @@ def replace_extension_ids(feature_dir, main_dir):
         feature_extension["_id"] = main_extension["_id"]
         feature_extension["imageUrlToken"] = main_extension["imageUrlToken"]
 
-        # Check if the feature extension export was created and changed at the same time
-        if feature_extension.get("createdAt") == feature_extension.get("lastChanged"):
+        # Check if lastChanged is within 10 minutes (600 seconds) of createdAt -> assume no code change was done this was just snapshot restoring
+        if feature_extension.get("lastChanged") - 600 < feature_extension.get("createdAt")  :
             feature_extension["lastChangedBy"] = main_extension["lastChangedBy"]
             feature_extension["lastChanged"] = main_extension["lastChanged"]
 
