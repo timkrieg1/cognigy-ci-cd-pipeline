@@ -769,7 +769,7 @@ class CognigyAPIClient:
             knowledge_sources = self.get(f"knowledgestores/{knowledge_store_id}/sources", params={"limit": 100})
             for source in knowledge_sources:
                 # --- Fetch content for each source ---
-                chunks = self.get(f"knowledgestores/{knowledge_store_id}/sources/{source['_id']}/chunks", params={"limit": 100})
+                chunks = self.get(f"knowledgestores/{knowledge_store_id}/sources/{source['_id']}/chunks?sort=order: asc", params={"limit": 100})
                 source["chunks"] = chunks
                 knowledge_store_data["knowledge_sources"][source["name"]] = source
 
