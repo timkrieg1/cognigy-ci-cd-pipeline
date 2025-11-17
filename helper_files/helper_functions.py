@@ -245,7 +245,10 @@ def replace_ids_in_feature_directory(main_dir, feature_dir, feature_project_id, 
     # Step 4: Replace IDs in Lexicons according to custom logic
     replace_lexicon_ids(feature_dir, main_dir)
 
-    # Step 5: Compare and replace metadata
+    # Step 5: Replace intent slot ids according to custom logic
+    replace_slot_ids(feature_dir, main_dir)
+
+    # Step 6: Compare and replace metadata
     replace_metadata_in_files(feature_dir, main_mapping)
 
 def replace_ids_in_files(directory, id_mapping):
@@ -347,3 +350,67 @@ def load_lexicons_by_reference_id(directory):
             except json.JSONDecodeError:
                 print(f"Skipping invalid JSON file: {file_path}")
     return lexicons
+
+def replace_slot_ids(feature_dir, main_dir):
+    """
+    Replaces slot IDs in the feature directory with matching IDs from the main directory
+    if the slot objects are identical (excluding the _id).
+
+    Args:
+        feature_dir (str): Path to the feature agent directory containing flows.
+        main_dir (str): Path to the main agent directory containing flows.
+    """
+    flows_path_feature = os.path.join(feature_dir, "flows")
+    flows_path_main = os.path.join(main_dir, "flows")
+
+    for flow_name in os.listdir(flows_path_feature):
+        feature_intents_path = os.path.join(flows_path_feature, flow_name, "intents/intents.json")
+        main_intents_path = os.path.join(flows_path_main, flow_name, "intents/intents.json")
+
+        if not os.path.exists(feature_intents_path) or not os.path.exists(main_intents_path):
+            continue  # Skip if intents.json is missing in either directory
+
+        with open(feature_intents_path, "r", encoding="utf-8") as f:
+            feature_intents = json.load(f)
+
+        with open(main_intents_path, "r", encoding="utf-8") as f:
+            main_intents = json.load(f)
+
+        # Iterate over intents in the feature directory
+        for intent_name, feature_intent_data in feature_intents.items():
+            main_intent_data = main_intents.get(intent_name)
+            if not main_intent_data:
+                continue  # Skip if the intent does not exist in the main directory
+
+            # Iterate over training sentences in the feature intent
+            for feature_sentence in feature_intent_data.get("training_sentences", []):
+                reference_id = feature_sentence.get("referenceId")
+                if not reference_id:
+                    continue  # Skip if no referenceId is present
+
+                # Find the corresponding training sentence in the main intent
+                main_sentence = next(
+                    (s for s in main_intent_data.get("training_sentences", []) if s.get("referenceId") == reference_id),
+                    None
+                )
+                if not main_sentence:
+                    continue  # Skip if no matching training sentence is found
+
+                # Compare slots in the training sentences
+                feature_slots = feature_sentence.get("slots", [])
+                main_slots = main_sentence.get("slots", [])
+
+                for feature_slot in feature_slots:
+                    # Find a matching slot in the main slots (excluding _id)
+                    matching_main_slot = next(
+                        (main_slot for main_slot in main_slots if {k: v for k, v in main_slot.items() if k != "_id"} ==
+                         {k: v for k, v in feature_slot.items() if k != "_id"}),
+                        None
+                    )
+                    if matching_main_slot:
+                        # Replace the _id in the feature slot with the _id from the main slot
+                        feature_slot["_id"] = matching_main_slot["_id"]
+
+        # Save the updated intents.json back to the feature directory
+        with open(feature_intents_path, "w", encoding="utf-8") as f:
+            json.dump(feature_intents, f, indent=4, ensure_ascii=False)
