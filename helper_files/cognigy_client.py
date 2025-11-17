@@ -271,7 +271,7 @@ class CognigyAPIClient:
             response.raise_for_status()
             download_link = response.json().get("downloadLink", "")
             # --- Download the file ---
-            target_dir = os.path.join(self.folder_name, "package") if not knowledge_store else "knowledge_store_package"
+            target_dir = os.path.join(self.folder_name, "package" if not knowledge_store else "knowledge_store_package")
             os.makedirs(target_dir, exist_ok=True)
             package_path = os.path.join(target_dir, f"{self.package_name}.zip")
             with self.session.get(download_link, stream=True) as r:
