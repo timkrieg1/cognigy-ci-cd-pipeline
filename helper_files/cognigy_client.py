@@ -978,3 +978,86 @@ class CognigyAPIClient:
         )
         response.raise_for_status()
         print("Snapshot restore initiated successfully.", flush=True)
+
+    def upload_knowledge_store_package(self, knowledge_store_package_path):
+        """
+        Uploads a knowledge store package from the knowledge_store_package directory.
+        """
+        print("Uploading knowledge store package...")
+
+        # --- Ensure knowledge store package exists in knowledge_store_package directory exists ---
+        zip_files = [f for f in os.listdir(knowledge_store_package_path) if f.endswith('.zip')]
+        if not zip_files:
+            raise FileNotFoundError(f"No .zip file found in the {knowledge_store_package_path} directory.")
+        if len(zip_files) > 1:
+            raise RuntimeError(f"Multiple .zip files found in the {knowledge_store_package_path} directory. There should be only one.")
+
+        # --- Upload knowledge store package ---
+        zip_file_path = os.path.join(knowledge_store_package_path, zip_files[0])
+        files = {
+            'file': open(zip_file_path, "rb")
+        }
+
+        data = {
+            'projectId': self.project_id,
+        }
+
+        r = requests.post(
+            url=f"{self.base_url}/packages/upload",
+            data=data,
+            files=files,
+            headers={"X-API-KEY": self.api_key}
+        )
+        r.raise_for_status()
+        task_id = r.json().get("_id", "")
+        print("Knowledge store package upload triggered.", flush=True)
+
+        # --- Poll for task completion
+        package_id = ""
+        while True:
+            r = self.session.get(
+                url=f"{self.base_url}/tasks/{task_id}"
+            )
+            r.raise_for_status()
+            task_status = r.json().get("status", "active")
+            print(f"Current knowledge store upload task status: {task_status}", flush=True)
+            if task_status == "done":
+                package_id = r.json().get("data", {}).get("packageId", "")
+                break
+            if task_status != "active":
+                raise RuntimeError(f"Knowledge store upload task failed with status: {task_status}")
+            time.sleep(5)
+        
+        # --- Query graph api to get resource ids from package ---
+        if not package_id or package_id == "":
+            raise RuntimeError("Could not retrieve packageId after knowledge store upload.")
+        resource_ids = []
+        response = self.session.get(
+            url=f"{self.base_url}/projects/{self.project_id}/graph?packages=true"
+        )
+
+        response.raise_for_status()
+        graph_data = response.json()
+        package_resources = graph_data.get(package_id, {}).get("resources", [])
+
+        if not package_resources or len(package_resources) == 0:
+            raise RuntimeError("No resources found in the graph of the feature agent after knowledge store upload.")
+        
+        knowledge_store_merge_ids = []
+
+        for resource in package_resources:
+            if resource.get("type") == "knowledgeStore":
+                knowledge_store_merge_ids.append(resource.get("_id"))
+
+        # --- Merge knowledge stores ---
+        response = self.session.post(
+            url=f"{self.base_url}/packages/{package_id}/merge",
+            json={
+                "resourceId": knowledge_store_merge_ids
+            }
+        )
+        response.raise_for_status()
+        print(f"Merged knowledge stores into feature agent.", flush=True)
+
+
+        

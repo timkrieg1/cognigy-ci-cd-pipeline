@@ -105,9 +105,11 @@ CognigyAPIClientBase.extract_agent_resources_by_ids(
 
 if not resource_ids.get("knowledgestores", []) is None and len(resource_ids.get("knowledgestores", [])) > 0:
     # --- Download knowledge store package ---
-    CognigyAPIClientBase.create_package(
+    knowledge_store_package = CognigyAPIClientBase.create_package(
         resource_ids=resource_ids.get("knowledgestores", [])
     )
+
+    CognigyAPIClientBase.download_package(knowledge_store=True)
 
     CognigyAPIClientBase.download_package(knowledge_store=True)
 
@@ -131,7 +133,7 @@ with open("feature_branch_agent_id.json", "w") as json_file:
     json.dump(feature_branch_agent_info, json_file, indent=4)
 
 # --- Instantiate new api client for Branch Agent ---
-CognigyAPIClientBranch = CognigyAPIClient(
+CognigyAPIClientFeature = CognigyAPIClient(
     base_url=base_url_dev,
     api_key=api_key_dev,
     project_id=feature_branch_agent_id,
@@ -141,14 +143,16 @@ CognigyAPIClientBranch = CognigyAPIClient(
 )
 
 # --- Upload knowledge store package ---
-
-# TO DO
+if os.path.exists(f"{agent_folder}/knowledge_store_package"):
+    CognigyAPIClientFeature.upload_knowledge_store_package(
+        knowledge_store_package_path=f"{agent_folder}/knowledge_store_package"
+    )
 
 # --- Upload snapshot to newly create agent ---
-CognigyAPIClientBranch.deploy_agent()
+CognigyAPIClientFeature.deploy_agent()
 
 # --- Restore snapshot in the dev branch agent ---
-CognigyAPIClientBranch.restore_snapshot(
+CognigyAPIClientFeature.restore_snapshot(
     snapshot_name=snapshot_name
 )
 
