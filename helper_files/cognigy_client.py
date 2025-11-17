@@ -1053,7 +1053,7 @@ class CognigyAPIClient:
         response = self.session.post(
             url=f"{self.base_url}/packages/{package_id}/merge",
             json={
-                "resourceId": knowledge_store_merge_ids
+                "resourceIds": knowledge_store_merge_ids
             }
         )
         response.raise_for_status()
