@@ -83,12 +83,14 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
         # Check if the object has a referenceId
         reference_id = obj.get("referenceId")
         if reference_id and reference_id in main_mapping:
-            if "createdAt" in main_object:
-                obj["createdAt"] = main_object["createdAt"]
-            if "createdBy" in main_object:
-                obj["createdBy"] = main_object["createdBy"]
+
             main_object = main_mapping[reference_id].get("objectData")
+
             if main_object:
+                if "createdAt" in main_object:
+                    obj["createdAt"] = main_object["createdAt"]
+                if "createdBy" in main_object:
+                    obj["createdBy"] = main_object["createdBy"]
                 if "chartReference" in main_object:
                     obj["chartReference"] = main_object["chartReference"]
                 if "intentTrainGroupReference" in main_object:
