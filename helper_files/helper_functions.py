@@ -313,6 +313,9 @@ def replace_lexicon_ids(feature_dir, main_dir):
         # Compare values in both lexicons
         feature_values = feature_lexicon.get("values", [])
         main_values = main_lexicon.get("values", [])
+        packaged_value = main_lexicon.get("isPackagedForDownload", False)
+        if packaged_value:
+            feature_lexicon["isPackagedForDownload"] = packaged_value
 
         for feature_value in feature_values:
             feature_keyphrase = feature_value.get("keyphrase")
