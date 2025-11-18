@@ -4,6 +4,7 @@ import re
 import time  
 import os
 import json
+import difflib
 
 # --- Decorator for retrying on 500 server errors ---
 def retry_on_500(max_retries=3, wait_seconds=5):
@@ -66,7 +67,7 @@ def replace_metadata_in_files(directory, main_mapping):
                     print(f"An error occurred while processing file {file_path}: {e}")
 
 
-def replace_metadata_in_object(obj, main_mapping, metadata_keys):
+def replace_metadata_in_object_old(obj, main_mapping, metadata_keys):
     """
     Recursively processes a JSON object or list to replace metadata fields if objects are identical
     (except for metadata keys) when compared to the main_mapping.
@@ -85,7 +86,6 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
         if reference_id and reference_id in main_mapping:
 
             main_object = main_mapping[reference_id].get("objectData")
-
             if main_object:
                 if "createdAt" in main_object:
                     obj["createdAt"] = main_object["createdAt"]
@@ -98,6 +98,21 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
                 # Compare the object with the main object, excluding metadata keys
                 obj_without_metadata = {k: v for k, v in obj.items() if k not in metadata_keys}
                 main_object_without_metadata = {k: v for k, v in main_object.items() if k not in metadata_keys}
+
+                if (obj_without_metadata["name"] == "AutoGuard Pro Hotel Policy"):
+                    # Generate a diff between the two objects
+                    diff = {
+                        "only_in_obj": {k: v for k, v in obj_without_metadata.items() if k not in main_object_without_metadata},
+                        "only_in_main_object": {k: v for k, v in main_object_without_metadata.items() if k not in obj_without_metadata},
+                        "different_values": {k: {"obj": obj_without_metadata[k], "main_object": main_object_without_metadata[k]}
+                                            for k in obj_without_metadata if k in main_object_without_metadata and obj_without_metadata[k] != main_object_without_metadata[k]}
+                    }
+
+                    # Save the diff to a JSON file
+                    diff_file_path = os.path.join("diffs", f"{reference_id}_diff.json")
+                    os.makedirs(os.path.dirname(diff_file_path), exist_ok=True)
+                    with open(diff_file_path, "w", encoding="utf-8") as diff_file:
+                        json.dump(diff, diff_file, indent=4, ensure_ascii=False)
 
                 if obj_without_metadata == main_object_without_metadata:
                     # Replace metadata keys in the object
@@ -114,6 +129,70 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys):
         # Recursively process each item in the list
         for i in range(len(obj)):
             obj[i] = replace_metadata_in_object(obj[i], main_mapping, metadata_keys)
+
+    return obj
+
+def replace_metadata_in_object(obj, main_mapping, metadata_keys, _processing_depth=0):
+    """
+    Recursively processes a JSON object or list to replace metadata fields if objects are identical
+    (except for metadata keys) when compared to the main_mapping.
+    
+    Now uses depth-first processing to handle nested structures like knowledge stores.
+
+    Args:
+        obj (dict or list): The JSON object or list to process.
+        main_mapping (dict): A dictionary where keys are referenceIds and values are dictionaries with "objectData".
+        metadata_keys (set): A set of metadata keys to replace.
+        _processing_depth (int): Internal parameter to track recursion depth.
+    """
+    if isinstance(obj, dict):
+        # First, recursively process all nested objects (depth-first)
+        for key, value in obj.items():
+            obj[key] = replace_metadata_in_object(value, main_mapping, metadata_keys, _processing_depth + 1)
+        
+        # Then process this object after all nested objects have been processed
+        reference_id = obj.get("referenceId")
+        if reference_id and reference_id in main_mapping:
+            main_object = main_mapping[reference_id].get("objectData")
+            if main_object:
+                # Copy stable metadata fields
+                stable_fields = ["createdAt", "createdBy", "chartReference", "intentTrainGroupReference"]
+                for field in stable_fields:
+                    if field in main_object:
+                        obj[field] = main_object[field]
+                
+                # Compare objects excluding metadata keys
+                obj_without_metadata = {k: v for k, v in obj.items() if k not in metadata_keys}
+                main_object_without_metadata = {k: v for k, v in main_object.items() if k not in metadata_keys}
+
+                # Debug output for specific object (keep your existing debug code)
+                if obj_without_metadata.get("name") == "AutoGuard Pro Hotel Policy":
+                    diff = {
+                        "only_in_obj": {k: v for k, v in obj_without_metadata.items() if k not in main_object_without_metadata},
+                        "only_in_main_object": {k: v for k, v in main_object_without_metadata.items() if k not in obj_without_metadata},
+                        "different_values": {k: {"obj": obj_without_metadata[k], "main_object": main_object_without_metadata[k]}
+                                            for k in obj_without_metadata if k in main_object_without_metadata and obj_without_metadata[k] != main_object_without_metadata[k]}
+                    }
+
+                    diff_file_path = os.path.join("diffs", f"{reference_id}_diff.json")
+                    os.makedirs(os.path.dirname(diff_file_path), exist_ok=True)
+                    with open(diff_file_path, "w", encoding="utf-8") as diff_file:
+                        json.dump(diff, diff_file, indent=4, ensure_ascii=False)
+
+                # Now compare - nested objects should already have updated metadata
+                if obj_without_metadata == main_object_without_metadata:
+                    # Replace metadata keys in the object
+                    for key in metadata_keys:
+                        if key in main_object:
+                            obj[key] = main_object[key]
+                            
+                    # Optional: Log successful metadata replacement
+                    print(f"Updated metadata for object with referenceId: {reference_id}")
+
+    elif isinstance(obj, list):
+        # Recursively process each item in the list
+        for i in range(len(obj)):
+            obj[i] = replace_metadata_in_object(obj[i], main_mapping, metadata_keys, _processing_depth + 1)
 
     return obj
 
