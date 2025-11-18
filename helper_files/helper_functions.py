@@ -165,20 +165,6 @@ def replace_metadata_in_object(obj, main_mapping, metadata_keys, _processing_dep
                 obj_without_metadata = {k: v for k, v in obj.items() if k not in metadata_keys}
                 main_object_without_metadata = {k: v for k, v in main_object.items() if k not in metadata_keys}
 
-                # Debug output for specific object (keep your existing debug code)
-                if obj_without_metadata.get("name") == "AutoGuard Pro Hotel Policy":
-                    diff = {
-                        "only_in_obj": {k: v for k, v in obj_without_metadata.items() if k not in main_object_without_metadata},
-                        "only_in_main_object": {k: v for k, v in main_object_without_metadata.items() if k not in obj_without_metadata},
-                        "different_values": {k: {"obj": obj_without_metadata[k], "main_object": main_object_without_metadata[k]}
-                                            for k in obj_without_metadata if k in main_object_without_metadata and obj_without_metadata[k] != main_object_without_metadata[k]}
-                    }
-
-                    diff_file_path = os.path.join("diffs", f"{reference_id}_diff.json")
-                    os.makedirs(os.path.dirname(diff_file_path), exist_ok=True)
-                    with open(diff_file_path, "w", encoding="utf-8") as diff_file:
-                        json.dump(diff, diff_file, indent=4, ensure_ascii=False)
-
                 # Now compare - nested objects should already have updated metadata
                 if obj_without_metadata == main_object_without_metadata:
                     # Replace metadata keys in the object
