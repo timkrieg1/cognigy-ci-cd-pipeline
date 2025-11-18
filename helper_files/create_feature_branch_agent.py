@@ -111,8 +111,6 @@ if not resource_ids.get("knowledgestores", []) is None and len(resource_ids.get(
 
     CognigyAPIClientBase.download_package(knowledge_store=True)
 
-    CognigyAPIClientBase.download_package(knowledge_store=True)
-
 # --- Download snapshot from base environment ---
 snapshot_name = CognigyAPIClientBase.download_snapshot(
     release_description="Export Snapshot for Dev Branch Agent."
