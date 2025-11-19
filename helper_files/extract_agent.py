@@ -21,6 +21,7 @@ required_vars = [
     "BOT_NAME",
     "RELEASE_DESCRIPTION",
     "RUN_AUTOMATED_TEST",
+    "BRANCH_NAME",
 ]
 
 # --- Find missing environment variables ---
@@ -37,6 +38,13 @@ bot_name = os.getenv("BOT_NAME")
 max_snapshots = int(os.getenv("MAX_SNAPSHOTS"))
 release_description = os.getenv("RELEASE_DESCRIPTION")
 run_automated_test = os.getenv("RUN_AUTOMATED_TEST").lower() == "true"
+current_branch = os.getenv("BRANCH_NAME")
+
+# --- Check if branch name is valid ---
+if not current_branch:
+    raise EnvironmentError("CURRENT_BRANCH environment variable is not set.")
+if current_branch != "development":
+    raise RuntimeError(f"Branch name must be 'development'. Current branch name: {current_branch}")
 
 print(f"Automated Testing: {run_automated_test}")
 # --- Get bot mappings ---
@@ -54,18 +62,17 @@ agent_folder = "agent"
 if os.path.exists(agent_folder):
     shutil.rmtree(agent_folder)
 
-# --- Instantiate Cognigy Dev Client ---
 CognigyAPIClientDev = CognigyAPIClient(
     base_url=base_url_dev,
     api_key=api_key_dev,
     project_id=project_id_dev,
     bot_name=bot_name,
-    locales=locales,
-    playbook_prefixes=playbook_prefixes if run_automated_test else None,
-    playbook_flows=playbook_flows if run_automated_test else None,
     max_snapshots=max_snapshots,
+    locales=locales,
+    playbook_flows=playbook_flows,
+    playbook_prefixes=playbook_prefixes,
+    folder_name=agent_folder
 )
-
 # --- Run automated tests ---
 if run_automated_test:
     automated_tests_passed = CognigyAPIClientDev.run_automated_tests()
@@ -79,25 +86,28 @@ if run_automated_test:
     print("Automated tests passed successfully.")
 
 #Start fetching data for package creation
-flow_ids = CognigyAPIClientDev.get_flow_ids()
-lexicon_ids = CognigyAPIClientDev.get_lexicon_ids()
-connection_ids = CognigyAPIClientDev.get_connection_ids()
-nlu_connector_ids = CognigyAPIClientDev.get_nluconnector_ids()
-ai_agent_ids = CognigyAPIClientDev.get_aiagent_ids()
-large_language_model_ids = CognigyAPIClientDev.get_largelanguagemodel_ids()
-knowledge_store_ids = CognigyAPIClientDev.get_knowledgestore_ids()
-function_ids = CognigyAPIClientDev.get_function_ids()
-locale_ids = CognigyAPIClientDev.get_locale_ids()
+resource_endpoints = [
+    "flows",
+    "lexicons",
+    "connections",
+    "nluconnectors",
+    "aiagents",
+    "largelanguagemodels",
+    "knowledgestores",
+    "functions",
+    "locales",
+    "extensions"
+]
+resource_ids = {}
+for endpoint in resource_endpoints:
+    resource_ids[endpoint] = CognigyAPIClientDev.get_resource_ids(endpoint)
 
-#Combine to package ressource list
+# Flatten resource IDs for package resource list excluding functions, extensions, and locales
 package_ressource_ids = [
-    *flow_ids,
-    *lexicon_ids,
-    *connection_ids,
-    *nlu_connector_ids,
-    *ai_agent_ids,
-    *large_language_model_ids,
-    *knowledge_store_ids
+    resource_id
+    for endpoint, endpoint_ids in resource_ids.items()
+    if endpoint not in ["functions", "extensions", "locales"]
+    for resource_id in endpoint_ids
 ]
 
 #Create package
@@ -113,19 +123,20 @@ snapshot_name = CognigyAPIClientDev.download_snapshot(
 
 # --- Extract all agent ressources by ids ---
 CognigyAPIClientDev.extract_agent_resources_by_ids(
-    flow_ids=flow_ids,
-    lexicon_ids=lexicon_ids,
-    connection_ids=connection_ids,
-    nlu_connector_ids=nlu_connector_ids,
-    ai_agent_ids=ai_agent_ids,
-    large_language_model_ids=large_language_model_ids,
-    knowledge_store_ids=knowledge_store_ids,
-    function_ids=function_ids,
-    locale_ids=locale_ids
+    flow_ids=resource_ids.get("flows", []),
+    lexicon_ids=resource_ids.get("lexicons", []),
+    connection_ids=resource_ids.get("connections", []),
+    nlu_connector_ids=resource_ids.get("nluConnectors", []),
+    ai_agent_ids=resource_ids.get("aiagents", []),
+    large_language_model_ids=resource_ids.get("largelanguagemodels", []),
+    knowledge_store_ids=resource_ids.get("knowledgestores", []),
+    function_ids=resource_ids.get("functions", []),
+    locale_ids=resource_ids.get("locales", []),
+    extension_ids=resource_ids.get("extensions", [])
 )
 
 # --- Git branch creation and commit logic ---
-branch_name = snapshot_name
+branch_name = current_branch  # Use the passed branch name
 
 # Detect CI/CD environment and configure git/remote dynamically
 if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
@@ -148,22 +159,14 @@ else:
 subprocess.run(["git", "config", "--global", "user.email", user_email], check=True)
 subprocess.run(["git", "config", "--global", "user.name", user_name], check=True)
 
-# Ensure we are on main and up to date
+# Ensure we are on the current branch and up to date
 subprocess.run(["git", "fetch", "--all"], check=True)
-try:
-    subprocess.run(["git", "checkout", "main"], check=True)
-except subprocess.CalledProcessError:
-    print("Branch 'main' not found, trying 'master'...")
-    subprocess.run(["git", "checkout", "master"], check=True)
-subprocess.run(["git", "pull", remote_name, "main"], check=True)
-
-# Create new branch from main
-subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+subprocess.run(["git", "checkout", branch_name], check=True)
+subprocess.run(["git", "pull", remote_name, branch_name], check=True)
 
 # Stage and commit new agent export
 subprocess.run(["git", "add", agent_folder], check=True)
-subprocess.run(["git", "commit", "-m", f"Update agent export for {bot_name}"], check=True)
+subprocess.run(["git", "commit", "-m", f"Exported development agent for {bot_name}"], check=True)
 
-# Push the new branch
+# Push the changes to the current branch
 subprocess.run(["git", "push", "-u", remote_name, branch_name], check=True)
-
