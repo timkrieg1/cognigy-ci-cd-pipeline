@@ -41,4 +41,4 @@ CognigyAPIClient = CognigyAPIClient(
 # --- Deploy agent to production ---
 CognigyAPIClient.deploy_agent()
 
-print(f"Agent successfully deployed to {"integration" if base_branch == "integration" else "production"} environment.")
+print(f"Agent successfully deployed to {'integration' if base_branch == 'integration' else 'production'} environment.")
