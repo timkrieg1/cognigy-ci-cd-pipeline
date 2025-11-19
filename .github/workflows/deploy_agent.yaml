@@ -1,0 +1,105 @@
+name: Deploy Agent
+on:
+  workflow_call:
+    inputs:
+      REPOSITORY:
+        description: 'Repository name'
+        required: true
+        type: string
+      BASE_BRANCH:
+        description: 'Base branch for deployment'
+        required: true
+        type: string
+      HEAD_BRANCH:
+        description: 'Head branch for deployment'
+        required: true
+        type: string
+      BOT_NAME:
+        description: 'Bot name'
+        required: true
+        type: string
+      COGNIGY_BASE_URL_DEV:
+        description: 'Cognigy base URL for development environment'
+        required: true
+        type: string
+      COGNIGY_BASE_URL_TEST:
+        description: 'Cognigy base URL for test environment'
+        required: true
+        type: string
+      COGNIGY_BASE_URL_PROD:
+        description: 'Cognigy base URL for production environment'
+        required: true
+        type: string
+      MAX_SNAPSHOTS:
+        description: 'Maximum number of snapshots in env'
+        required: true
+        type: string
+
+    secrets:
+      PAT_TOKEN:
+        description: 'GitHub Personal Access Token for authentication'
+        required: true
+      COGNIGY_API_KEY_DEV:
+        description: 'Cognigy API key for development environment'
+        required: true
+      COGNIGY_API_KEY_TEST:
+        description: 'Cognigy API key for test environment'
+        required: true
+      COGNIGY_API_KEY_PROD:
+        description: 'Cognigy API key for production environment'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository (CI/CD pipeline repo)
+        uses: actions/checkout@v4
+        with:
+          repository: timkrieg1/cognigy-ci-cd-pipeline
+          path: pipeline-repo
+
+      - name: Checkout calling repository (bot repo)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.REPOSITORY }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: bot-repo
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r pipeline-repo/requirements.txt
+
+      - name: Configure Git for bot repository
+        run: |
+          cd bot-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
+
+      - name: Run Deployment Script
+        env:
+          BOT_NAME: ${{ inputs.BOT_NAME }}
+          COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
+          COGNIGY_BASE_URL_TEST: ${{ inputs.COGNIGY_BASE_URL_TEST }}
+          COGNIGY_BASE_URL_PROD: ${{ inputs.COGNIGY_BASE_URL_PROD }}
+          COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
+          COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
+          COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
+          MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
+          BASE_BRANCH: ${{ inputs.BASE_BRANCH }}
+          HEAD_BRANCH: ${{ inputs.HEAD_BRANCH }}
+          PYTHONUNBUFFERED: 1
+        run: |
+          # Change to bot repository directory before running the script
+          cd bot-repo
+          python ../pipeline-repo/helper_files/deploy_agent.py
