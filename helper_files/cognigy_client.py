@@ -403,6 +403,51 @@ class CognigyAPIClient:
         # --- Create download link ---
         download_link = self.create_download_link(snapshot_id)
 
+        # --- Prepare target directory ---
+        target_dir = os.path.join(self.folder_name, "snapshot")
+        os.makedirs(target_dir, exist_ok=True)
+        snapshot_path = os.path.join(target_dir, f"{self.snapshot_name}.csnap")
+
+        # --- Downloading Snapshot ---
+        while True:
+            response = self.session.post(download_link)
+            retries = 0
+            max_retries = 5
+            while retries < max_retries:
+                try:
+                    response.raise_for_status()
+                    break
+                except requests.exceptions.HTTPError as e:
+                    if response.status_code == 409:
+                        retries += 1
+                        print(f"Conflict error (409) encountered. Retrying {retries}/{max_retries} in 5 seconds...", flush=True)
+                        time.sleep(5)
+                    else:
+                        raise
+            else:
+                print("Max retries reached for 409 Conflict error. Raising exception.", flush=True)
+                raise
+            download_link = response.json().get("downloadLink", "")
+            print("Attempting to download snapshot...", flush=True)
+
+            with self.session.get(download_link, stream=True) as r:
+                r.raise_for_status()
+                with open(snapshot_path, "wb") as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+
+                # --- Check if the file only contains the text 'csnap' ---
+                with open(snapshot_path, "rb") as f:
+                    content = f.read()
+                    if content.strip() == b"csnap":
+                        print("Downloaded file is placeholder 'csnap', retrying in 5 seconds...", flush=True)
+                        time.sleep(5)
+                        continue
+                    else:
+                        print("Snapshot downloaded successfully.", flush=True)
+                        break
+        
         # --- Safety net: Verify snapshot size ---
         self.verify_snapshot_size(snapshot_id, download_link)
 
@@ -450,38 +495,6 @@ class CognigyAPIClient:
         )
         response.raise_for_status()
         return response.json().get("downloadLink")
-
-    def verify_snapshot_size(self, snapshot_id: str, download_link: str) -> None:
-        """
-        Verifies the size of the snapshot to ensure it is valid.
-
-        Args:
-            snapshot_id (str): The ID of the snapshot.
-            download_link (str): The download link for the snapshot.
-        """
-        for attempt in range(2):
-            snapshot_size = self.get_snapshot_size(snapshot_id)
-            if snapshot_size > 0:
-                print(f"Snapshot size verified: {snapshot_size} bytes")
-                return
-            print(f"Snapshot size verification attempt {attempt + 1} failed. Retrying...")
-            time.sleep(5)
-        raise RuntimeError("Snapshot size verification failed after multiple attempts.")
-
-    def get_snapshot_size(self, snapshot_id: str) -> int:
-        """
-        Retrieves the size of the snapshot.
-
-        Args:
-            snapshot_id (str): The ID of the snapshot.
-        Returns:
-            int: The size of the snapshot in bytes.
-        """
-        response = self.session.get(
-            url=f"{self.base_url}/snapshots/{snapshot_id}"
-        )
-        response.raise_for_status()
-        return response.json().get("size", 0)
 
     @retry_on_500()
     def run_automated_tests(self) -> None:
