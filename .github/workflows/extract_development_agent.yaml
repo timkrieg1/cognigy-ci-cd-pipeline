@@ -32,14 +32,6 @@ on:
         description: 'Cognigy base URL for development environment'
         required: true
         type: string
-      COGNIGY_BASE_URL_TEST:
-        description: 'Cognigy base URL for test environment'
-        required: true
-        type: string
-      COGNIGY_BASE_URL_PROD:
-        description: 'Cognigy base URL for production environment'
-        required: true
-        type: string
       MAX_SNAPSHOTS:
         description: 'Maximum number of snapshots in env'
         required: true
@@ -55,12 +47,6 @@ on:
         required: true
       COGNIGY_API_KEY_DEV:
         description: 'Cognigy API key for development environment'
-        required: true
-      COGNIGY_API_KEY_TEST:
-        description: 'Cognigy API key for test environment'
-        required: true
-      COGNIGY_API_KEY_PROD:
-        description: 'Cognigy API key for production environment'
         required: true
 
 permissions:
@@ -111,11 +97,7 @@ jobs:
         env:
           BOT_NAME: ${{ inputs.BOT_NAME }}
           COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
-          COGNIGY_BASE_URL_TEST: ${{ inputs.COGNIGY_BASE_URL_TEST }}
-          COGNIGY_BASE_URL_PROD: ${{ inputs.COGNIGY_BASE_URL_PROD }}
           COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
-          COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
-          COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
           MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
           RELEASE_DESCRIPTION: ${{ inputs.RELEASE_DESCRIPTION }}
           BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
