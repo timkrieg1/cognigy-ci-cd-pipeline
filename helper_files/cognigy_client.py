@@ -383,7 +383,7 @@ class CognigyAPIClient:
 
         # --- Retrieve all snapshots and find the new snapshot by name ---
         snapshots = self.get("snapshots")
-        new_snapshot = next((s for s in snapshots if s["name"] == release_description), None)
+        new_snapshot = next((s for s in snapshots if s["name"] == self.snapshot_name), None)
         if not new_snapshot:
             raise RuntimeError("New snapshot not found after creation.")
         snapshot_id = new_snapshot["_id"]
