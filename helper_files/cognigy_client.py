@@ -449,9 +449,6 @@ class CognigyAPIClient:
                         print("Snapshot downloaded successfully.", flush=True)
                         break
         
-        # --- Safety net: Verify snapshot size ---
-        self.verify_snapshot_size(snapshot_id, download_link)
-
         return self.snapshot_name
 
     def poll_task_status(self, task_id: str, task_description: str) -> None:
