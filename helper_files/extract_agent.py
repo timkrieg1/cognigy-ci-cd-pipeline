@@ -14,9 +14,7 @@ load_dotenv(override=True)
 # --- Check for required environment variables ---
 required_vars = [
     "COGNIGY_BASE_URL_DEV",
-    "COGNIGY_BASE_URL_PROD",
     "COGNIGY_API_KEY_DEV",
-    "COGNIGY_API_KEY_PROD",
     "MAX_SNAPSHOTS",
     "BOT_NAME",
     "RELEASE_DESCRIPTION",
@@ -31,9 +29,7 @@ if missing_vars:
 
 # --- Assign environment variables ---
 base_url_dev = os.getenv("COGNIGY_BASE_URL_DEV")
-base_url_test = os.getenv("COGNIGY_BASE_URL_TEST")
 api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
-api_key_test = os.getenv("COGNIGY_API_KEY_TEST")
 bot_name = os.getenv("BOT_NAME")
 max_snapshots = int(os.getenv("MAX_SNAPSHOTS"))
 release_description = os.getenv("RELEASE_DESCRIPTION")
