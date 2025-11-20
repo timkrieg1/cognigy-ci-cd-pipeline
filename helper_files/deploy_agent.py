@@ -15,18 +15,17 @@ locales = bot_mappings["locales"]
 # --- Get environment variables ---
 bot_name = os.getenv("BOT_NAME")
 max_snapshots = int(os.getenv("MAX_SNAPSHOTS"))
-head_branch = os.getenv("HEAD_BRANCH")
 base_branch = os.getenv("BASE_BRANCH")
-if head_branch == "development" and base_branch == "integration":
+if base_branch == "integration":
     project_id = bot_mappings["test"]
     base_url = os.getenv("COGNIGY_BASE_URL_TEST")
     api_key = os.getenv("COGNIGY_API_KEY_TEST")
-elif head_branch == "integration" and base_branch == "production":
+elif base_branch == "production":
     project_id = bot_mappings["prod"]
     base_url = os.getenv("COGNIGY_BASE_URL_PROD")
     api_key = os.getenv("COGNIGY_API_KEY_PROD")
 else:
-    raise EnvironmentError(f"Invalid branch configuration for deployment. HEAD_BRANCH: {head_branch}, BASE_BRANCH: {base_branch}")
+    raise EnvironmentError(f"Invalid branch configuration for deployment. BASE_BRANCH: {base_branch}")
 
 # --- Instantiate Cognigy Prod Client ---
 CognigyAPIClient = CognigyAPIClient(

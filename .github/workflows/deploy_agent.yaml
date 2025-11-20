@@ -10,10 +10,6 @@ on:
         description: 'Base branch for deployment'
         required: true
         type: string
-      HEAD_BRANCH:
-        description: 'Head branch for deployment'
-        required: true
-        type: string
       BOT_NAME:
         description: 'Bot name'
         required: true
@@ -97,7 +93,6 @@ jobs:
           COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
           MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
           BASE_BRANCH: ${{ inputs.BASE_BRANCH }}
-          HEAD_BRANCH: ${{ inputs.HEAD_BRANCH }}
           PYTHONUNBUFFERED: 1
         run: |
           # Change to bot repository directory before running the script
