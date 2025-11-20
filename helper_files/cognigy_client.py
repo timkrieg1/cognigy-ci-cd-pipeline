@@ -344,10 +344,9 @@ class CognigyAPIClient:
             str: The name of the created snapshot.
         """
         print("Preparing snapshot for download...", flush=True)
+
+        # --- Ensure snapshot size limit ---
         self.ensure_snapshot_limit()
-        response = self.session.get(url=f"{self.base_url}/snapshots", params=self.params)
-        response.raise_for_status()
-        snapshots = response.json().get("items", [])
 
         # --- Determine the new snapshot name ---
         today_str = datetime.now().strftime("%d_%m_%Y")
@@ -363,6 +362,7 @@ class CognigyAPIClient:
                 suffix += 1
             new_snapshot_name = f"{base_snapshot_name}_{suffix}"
         self.snapshot_name = new_snapshot_name
+
         # --- Create a new snapshot ---
         response = self.session.post(
             url=f"{self.base_url}/snapshots",
@@ -373,77 +373,115 @@ class CognigyAPIClient:
             }
         )
         response.raise_for_status()
-        print("Created task to create new snapshot", flush=True)
-        print("Polling for snapshot to be created...", flush=True)
+        snapshot_task_id = response.json().get("_id")
+        if not snapshot_task_id:
+            raise RuntimeError("Failed to create snapshot task.")
 
-        # --- Get all snapshots again to get snapshot id ---
-        snapshot_id = None
-        while snapshot_id is None:
-            response = self.session.get(url=f"{self.base_url}/snapshots", params=self.params)
-            response.raise_for_status()
-            snapshots = response.json().get("items", [])
-            snapshot_id = next((snapshot["_id"] for snapshot in snapshots if snapshot["name"] == self.snapshot_name), None)
-            if snapshot_id is None:
-                print("Snapshot not found, retrying in 5 seconds...", flush=True)
-                time.sleep(5)
-        print(f"Snapshot was found, preparing download...", flush=True)
+        # --- Poll snapshot creation status ---
+        self.poll_task_status(snapshot_task_id, "Snapshot creation")
 
-        # --- Package snapshot ---
-        response = self.session.post(url=f"{self.base_url}/snapshots/{snapshot_id}/package")
-        response.raise_for_status()
+        # --- Retrieve all snapshots and find the new snapshot by name ---
+        snapshots = self.get("snapshots")
+        new_snapshot = next((s for s in snapshots if s["name"] == release_description), None)
+        if not new_snapshot:
+            raise RuntimeError("New snapshot not found after creation.")
+        snapshot_id = new_snapshot["_id"]
 
-        # --- Poll for the snapshot to be packaged and download the actual snapshot file ---
-        download_link_url = f"{self.base_url}/snapshots/{snapshot_id}/downloadLink"
-        target_dir = os.path.join(self.folder_name, "snapshot")
-        os.makedirs(target_dir, exist_ok=True)
-        snapshot_path = os.path.join(target_dir, f"{self.snapshot_name}.csnap")
-        previous_snapshot_size = -1
-        while True:
-            response = self.session.post(download_link_url)
-            retries = 0
-            max_retries = 5
-            while retries < max_retries:
-                try:
-                    response.raise_for_status()
-                    break
-                except requests.exceptions.HTTPError as e:
-                    if response.status_code == 409:
-                        retries += 1
-                        print(f"Conflict error (409) encountered. Retrying {retries}/{max_retries} in 5 seconds...", flush=True)
-                        time.sleep(5)
-                    else:
-                        raise
-            else:
-                print("Max retries reached for 409 Conflict error. Raising exception.", flush=True)
-                raise
-            download_link = response.json().get("downloadLink", "")
-            print("Attempting to download snapshot...", flush=True)
+        # --- Package the snapshot ---
+        package_response = self.session.post(
+            url=f"{self.base_url}/snapshots/{snapshot_id}/package"
+        )
+        package_response.raise_for_status()
+        package_task_id = package_response.json().get("_id")
+        if not package_task_id:
+            raise RuntimeError("Failed to create snapshot packaging task.")
 
-            with self.session.get(download_link, stream=True) as r:
-                r.raise_for_status()
-                with open(snapshot_path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
+        # --- Poll snapshot packaging status ---
+        self.poll_task_status(package_task_id, "Snapshot packaging")
 
-                # --- Check if the file only contains the text 'csnap' ---
-                with open(snapshot_path, "rb") as f:
-                    content = f.read()
-                    if content.strip() == b"csnap":
-                        print("Downloaded file is placeholder 'csnap', retrying in 5 seconds...", flush=True)
-                        time.sleep(5)
-                        continue
-                    else:
-                        snapshot_size = os.path.getsize(snapshot_path)
-                        if snapshot_size == previous_snapshot_size:
-                            print("Snapshot downloaded successfully.", flush=True)
-                            break
-                        previous_snapshot_size = snapshot_size
-                        print(f"Snapshot size differed. Trying again: {os.path.getsize(snapshot_path)} bytes", flush=True)
-                        
-                        
+        # --- Create download link ---
+        download_link = self.create_download_link(snapshot_id)
+
+        # --- Safety net: Verify snapshot size ---
+        self.verify_snapshot_size(snapshot_id, download_link)
+
         return self.snapshot_name
-    
+
+    def poll_task_status(self, task_id: str, task_description: str) -> None:
+        """
+        Polls the status of a task until it is completed.
+
+        Args:
+            task_id (str): The ID of the task to poll.
+            task_description (str): Description of the task for logging purposes.
+        """
+        poll_interval = 1  # seconds
+        log_interval = 10  # seconds
+        elapsed_time = 0
+
+        while True:
+            response = self.session.get(url=f"{self.base_url}/tasks/{task_id}")
+            response.raise_for_status()
+            task_status = response.json().get("status")
+
+            if task_status == "done":
+                print(f"{task_description} completed successfully.")
+                break
+            elif task_status == "active":
+                if elapsed_time % log_interval == 0:
+                    print(f"{task_description} is still in progress...")
+                elapsed_time += poll_interval
+                time.sleep(poll_interval)
+            else:
+                raise RuntimeError(f"{task_description} failed with status: {task_status}")
+
+    def create_download_link(self, snapshot_id: str) -> str:
+        """
+        Creates a download link for the snapshot.
+
+        Args:
+            snapshot_id (str): The ID of the snapshot.
+        Returns:
+            str: The download link for the snapshot.
+        """
+        response = self.session.post(
+            url=f"{self.base_url}/snapshots/{snapshot_id}/downloadLink"
+        )
+        response.raise_for_status()
+        return response.json().get("downloadLink")
+
+    def verify_snapshot_size(self, snapshot_id: str, download_link: str) -> None:
+        """
+        Verifies the size of the snapshot to ensure it is valid.
+
+        Args:
+            snapshot_id (str): The ID of the snapshot.
+            download_link (str): The download link for the snapshot.
+        """
+        for attempt in range(2):
+            snapshot_size = self.get_snapshot_size(snapshot_id)
+            if snapshot_size > 0:
+                print(f"Snapshot size verified: {snapshot_size} bytes")
+                return
+            print(f"Snapshot size verification attempt {attempt + 1} failed. Retrying...")
+            time.sleep(5)
+        raise RuntimeError("Snapshot size verification failed after multiple attempts.")
+
+    def get_snapshot_size(self, snapshot_id: str) -> int:
+        """
+        Retrieves the size of the snapshot.
+
+        Args:
+            snapshot_id (str): The ID of the snapshot.
+        Returns:
+            int: The size of the snapshot in bytes.
+        """
+        response = self.session.get(
+            url=f"{self.base_url}/snapshots/{snapshot_id}"
+        )
+        response.raise_for_status()
+        return response.json().get("size", 0)
+
     @retry_on_500()
     def run_automated_tests(self) -> None:
         """
@@ -1060,4 +1098,4 @@ class CognigyAPIClient:
         print(f"Merged knowledge stores into feature agent.", flush=True)
 
 
-        
+
