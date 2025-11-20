@@ -332,6 +332,7 @@ class CognigyAPIClient:
                     break
                 time.sleep(2)
             print(f"Deleted oldest snapshot: {snapshot_id}", flush=True)
+        return snapshots
 
     @retry_on_500()
     def download_snapshot(self, release_description: str) -> str:
@@ -346,7 +347,7 @@ class CognigyAPIClient:
         print("Preparing snapshot for download...", flush=True)
 
         # --- Ensure snapshot size limit ---
-        self.ensure_snapshot_limit()
+        snapshots = self.ensure_snapshot_limit()
 
         # --- Determine the new snapshot name ---
         today_str = datetime.now().strftime("%d_%m_%Y")
