@@ -404,13 +404,14 @@ class CognigyAPIClient:
         download_link = self.create_download_link(snapshot_id)
 
         # --- Prepare target directory ---
+        download_link_url = f"{self.base_url}/snapshots/{snapshot_id}/downloadLink"
         target_dir = os.path.join(self.folder_name, "snapshot")
         os.makedirs(target_dir, exist_ok=True)
         snapshot_path = os.path.join(target_dir, f"{self.snapshot_name}.csnap")
 
         # --- Downloading Snapshot ---
         while True:
-            response = self.session.post(download_link)
+            response = self.session.post(download_link_url)
             retries = 0
             max_retries = 5
             while retries < max_retries:
