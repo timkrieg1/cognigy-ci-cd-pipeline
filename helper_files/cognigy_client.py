@@ -675,7 +675,10 @@ class CognigyAPIClient:
         for flow_id in tqdm(flow_ids, desc="Extracting flows", unit="flow"):
             flow_data = {
                 "metadata": {},
-                "chart": [],
+                "chart": {
+                    "chart_data": [],
+                    "code_nodes": {}
+                },
                 "settings": {},
                 "intents": {},
                 "states": {},
@@ -711,6 +714,7 @@ class CognigyAPIClient:
 
 
             # --- Fetch each node in the chart and add it to the chart data ---
+            code_nodes = {}
             chart_nodes_data = []
             for node in chart:
                 r = self.session.get(
@@ -726,7 +730,17 @@ class CognigyAPIClient:
                 node["_data"].pop("referenceId")    
 
                 chart_nodes_data.append(node)
-            flow_data["chart"] = chart_nodes_data
+
+                # --- Extract code nodes into .js files ---
+                if node_data["type"] == "code":
+                    code_node_name = node_data.get("label")
+                    if code_node_name in code_nodes:
+                        code_node_name = code_node_name + "_" + node_data.get("_id")
+
+                    code_nodes[code_node_name] = node_data.get("config",{}).get("code","")
+
+            flow_data["chart"]["chart_data"] = chart_nodes_data
+            flow_data["chart"]["code_nodes"] = code_nodes
 
             # --- Flow Intents ---
             all_intents = {}
@@ -759,7 +773,20 @@ class CognigyAPIClient:
             for sub_directory, content in flow_data.items():
                 flow_sub_dir_path = os.path.join(flow_main_folder_path, sub_directory)
                 os.makedirs(flow_sub_dir_path, exist_ok=True)
-                file_path = os.path.join(flow_sub_dir_path, f"{sub_directory}.json")
+                abs_flow_sub_dir_path = os.path.abspath(flow_sub_dir_path)
+                if sub_directory == "chart":
+                    # --- Save code nodes separately (use absolute paths to avoid unexpected current working dir issues) ---
+                    code_nodes = content.pop("code_nodes", {})
+                    if code_nodes:
+                        code_nodes_dir = os.path.join(abs_flow_sub_dir_path, "code_nodes")
+                        os.makedirs(code_nodes_dir, exist_ok=True)
+                        for code_node_name, code_content in code_nodes.items():
+                            # --- Sanitize potential path separators in node labels ---
+                            safe_code_node_name = re.sub(r'[\\/]', '_', code_node_name)
+                            code_file_path = os.path.join(code_nodes_dir, f"{safe_code_node_name}.js")
+                            with open(code_file_path, "w", encoding="utf-8") as file:
+                                file.write(code_content.replace("\r\n", "\n"))
+                file_path = os.path.join(abs_flow_sub_dir_path, f"{sub_directory}.json")
                 with open(file_path, "w", encoding="utf-8") as f:
                     json.dump(content, f, indent=4, ensure_ascii=False)
 
@@ -877,8 +904,20 @@ class CognigyAPIClient:
             # --- Save aiAgent config to json file ---
             ai_agent_path = os.path.join(output_path, ai_agent_name)
             os.makedirs(ai_agent_path, exist_ok=True)
-            with open(f"{ai_agent_path}/config.json", "w", encoding="utf-8") as f:
+            with open(os.path.join(ai_agent_path, "config.json"), "w", encoding="utf-8") as f:
                 json.dump(ai_agent_data["config"], f, indent=4, ensure_ascii=False, sort_keys=True)
+
+            # --- Write description and instructions to .txt using absolute paths ---
+            abs_ai_agent_path = os.path.abspath(ai_agent_path)
+            description_content = ai_agent_data["config"].get("description", "")
+            instructions_content = ai_agent_data["config"].get("instructions", "")
+
+            with open(os.path.join(abs_ai_agent_path, "description.txt"), "w", encoding="utf-8") as f:
+                f.write(str(description_content))
+
+            with open(os.path.join(abs_ai_agent_path, "instructions.txt"), "w", encoding="utf-8") as f:
+                f.write(str(instructions_content))
+            
             # --- Create subdirectory for jobs ---
             ai_agent_jobs_path = os.path.join(output_path, f"{ai_agent_name}", "jobs")
             os.makedirs(ai_agent_jobs_path, exist_ok=True)
