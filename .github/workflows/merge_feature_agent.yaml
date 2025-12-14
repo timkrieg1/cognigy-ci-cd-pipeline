@@ -1,0 +1,80 @@
+name: Merge Feature Agent
+on:
+  workflow_call:
+    inputs:
+      REPOSITORY:
+        description: 'Repository name'
+        required: true
+        type: string
+      BOT_NAME:
+        description: "Name of the bot"
+        required: true
+        type: string
+      COGNIGY_BASE_URL_DEV:
+        description: "Cognigy Base URL for development"
+        required: true
+        type: string
+      BRANCH_NAME:
+        description: "Name of the feature branch"
+        required: true
+        type: string
+    secrets:
+      PAT_TOKEN:
+        description: 'GitHub Personal Access Token for creating pull requests'
+        required: true
+      COGNIGY_API_KEY_DEV:
+        required: true
+
+jobs:
+  extract-feature-branch-agent:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout current repository (CI/CD pipeline repo)
+        uses: actions/checkout@v4
+        with:
+          repository: timkrieg1/cognigy-ci-cd-pipeline
+          path: pipeline-repo
+
+      - name: Checkout calling repository (bot repo)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.REPOSITORY }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: bot-repo
+          ref: ${{ inputs.BRANCH_NAME }} # Checkout the feature branch
+
+      - name: Set Base Branch
+        env:
+          BASE_BRANCH: ${{ github.base_ref }}
+        run: echo "BASE_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r pipeline-repo/requirements.txt
+
+      - name: Configure Git for bot repository
+        run: |
+          cd bot-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
+
+      - name: Execute extract_feature_agent.py
+        env:
+          BOT_NAME: ${{ inputs.BOT_NAME }}
+          COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
+          COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
+          BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
+          BASE_BRANCH: ${{ env.BASE_BRANCH }}
+          PYTHONUNBUFFERED: '1'
+        run: |
+          # Change to bot repository directory before running the script
+          cd bot-repo
+          python ../pipeline-repo/helper_files/extract_feature_agent.py
