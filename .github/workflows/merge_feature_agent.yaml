@@ -1,4 +1,5 @@
 name: Merge Feature Agent
+
 on:
   workflow_call:
     inputs:
@@ -16,6 +17,10 @@ on:
         type: string
       BRANCH_NAME:
         description: "Name of the feature branch"
+        required: true
+        type: string
+      BASE_BRANCH:
+        description: "Base branch name"
         required: true
         type: string
     secrets:
@@ -44,11 +49,6 @@ jobs:
           path: bot-repo
           ref: ${{ inputs.BRANCH_NAME }} # Checkout the feature branch
 
-      - name: Set Base Branch
-        env:
-          BASE_BRANCH: ${{ github.base_ref }}
-        run: echo "BASE_BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -72,7 +72,7 @@ jobs:
           COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
           COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
           BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
-          BASE_BRANCH: ${{ env.BASE_BRANCH }}
+          BASE_BRANCH: ${{ inputs.BASE_BRANCH }}
           PYTHONUNBUFFERED: '1'
         run: |
           # Change to bot repository directory before running the script
