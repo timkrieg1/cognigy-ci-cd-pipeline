@@ -136,13 +136,10 @@ except subprocess.CalledProcessError:
     print(f"Branch {branch_name} not found")
 subprocess.run(["git", "pull", remote_name, branch_name], check=True)
 
-# Create new branch from main
-subprocess.run(["git", "checkout", "-b", branch_name], check=True)
-
 # Stage and commit new agent export
 subprocess.run(["git", "add", agent_folder], check=True)
 subprocess.run(["git", "commit", "-m", f"Update agent export for {bot_name}"], check=True)
 
-# Push the new branch
-subprocess.run(["git", "push", "-u", remote_name, branch_name], check=True)
+# Push changes to the existing branch
+subprocess.run(["git", "push", remote_name, branch_name], check=True)
 
