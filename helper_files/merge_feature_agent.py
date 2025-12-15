@@ -204,8 +204,43 @@ CognigyAPIClientFeature.create_package(
 
 CognigyAPIClientFeature.download_package()
 
-FeatureMergeClient = CognigyMergeClient(
+""" FeatureMergeClient = CognigyMergeClient(
     feature_dir=feature_agent_folder,
     base_dir=merge_base_dir,
     main_dir=agent_folder
-)
+) """
+
+# Detect CI/CD environment and configure git/remote dynamically
+if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
+    print("Running in GitHub Actions environment.")
+    remote_name = "origin"
+    user_email = "actions@github.com"
+    user_name = "github-actions"
+elif os.getenv("TF_BUILD", "").lower() == "true":
+    print("Running in Azure DevOps environment.")
+    remote_name = "origin"
+    user_email = "azure-pipelines@devops.com"
+    user_name = "azure-pipelines"
+else:
+    print("Running in local environment.")
+    remote_name = "origin"
+    user_email = "local@user.com"
+    user_name = "local-user"
+
+# Git config
+subprocess.run(["git", "config", "--global", "user.email", user_email], check=True)
+subprocess.run(["git", "config", "--global", "user.name", user_name], check=True)
+
+subprocess.run(["git", "fetch", "--all"], check=True)
+try:
+    subprocess.run(["git", "checkout", branch_name], check=True)
+except subprocess.CalledProcessError:
+    print(f"Branch {branch_name} not found")
+subprocess.run(["git", "pull", remote_name, branch_name], check=True)
+
+# Stage and commit new agent export
+subprocess.run(["git", "add", agent_folder], check=True)
+subprocess.run(["git", "commit", "-m", f"Update agent export for {bot_name}"], check=True)
+
+# Push changes to the existing branch
+subprocess.run(["git", "push", remote_name, branch_name], check=True)
