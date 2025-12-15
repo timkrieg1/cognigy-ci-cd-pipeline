@@ -93,14 +93,26 @@ def get_merge_base(base_branch, feature_branch):
 
 def checkout_merge_base(merge_base_commit, target_dir):
     """
-    Check out the repository at the merge base commit into the target directory.
+    Check out the repository at the merge base commit and copy the 'agent' folder to the target directory.
 
     Args:
         merge_base_commit (str): The merge base commit hash.
-        target_dir (str): The directory where the files will be checked out.
+        target_dir (str): The directory where the 'agent' folder will be copied.
     """
+    # Check out the repository at the merge base commit
     subprocess.run(["git", "checkout", merge_base_commit], check=True)
-    subprocess.run(["cp", "-r", ".", target_dir], check=True)
+
+    # Ensure the target directory exists
+    if not os.path.exists(target_dir):
+        os.makedirs(target_dir)
+
+    # Copy the 'agent' folder to the target directory
+    agent_folder = "agent"
+    if os.path.exists(agent_folder):
+        shutil.copytree(agent_folder, os.path.join(target_dir, agent_folder))
+        print(f"Copied '{agent_folder}' folder to '{target_dir}'.")
+    else:
+        raise FileNotFoundError(f"The 'agent' folder does not exist at the merge base commit.")
 
 def commit_merge_base_dir(target_dir):
     """
