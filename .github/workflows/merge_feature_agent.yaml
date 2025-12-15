@@ -27,7 +27,7 @@ on:
         required: true
 
 jobs:
-  extract-feature-branch-agent:
+  merge-feature-agent:
     runs-on: ubuntu-latest
 
     steps:

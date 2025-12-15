@@ -16,7 +16,8 @@ required_vars = [
     "COGNIGY_BASE_URL_DEV",
     "COGNIGY_API_KEY_DEV",
     "MAX_SNAPSHOTS",
-    "BOT_NAME"
+    "BOT_NAME",
+    "BRANCH_NAME"
 ]
 
 # --- Find missing environment variables ---
@@ -30,6 +31,7 @@ api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
 bot_name = os.getenv("BOT_NAME")
 max_snapshots = int(os.getenv("MAX_SNAPSHOTS"))
 release_description = f"Syncing Repository - {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')}"
+branch_name = os.getenv("BRANCH_NAME")
 
 # --- Get bot mappings ---
 with open("bot_mapping.json", "r") as f:
@@ -131,14 +133,12 @@ else:
 subprocess.run(["git", "config", "--global", "user.email", user_email], check=True)
 subprocess.run(["git", "config", "--global", "user.name", user_name], check=True)
 
-# Ensure we are on main and up to date
 subprocess.run(["git", "fetch", "--all"], check=True)
 try:
-    subprocess.run(["git", "checkout", "main"], check=True)
+    subprocess.run(["git", "checkout", branch_name], check=True)
 except subprocess.CalledProcessError:
-    print("Branch 'main' not found, trying 'master'...")
-    subprocess.run(["git", "checkout", "master"], check=True)
-subprocess.run(["git", "pull", remote_name, "main"], check=True)
+    print(f"Branch {branch_name} not found")
+subprocess.run(["git", "pull", remote_name, branch_name], check=True)
 
 # Create new branch from main
 subprocess.run(["git", "checkout", "-b", branch_name], check=True)

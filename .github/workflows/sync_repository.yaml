@@ -27,6 +27,10 @@ on:
         description: 'Maximum number of snapshots in env'
         required: true
         type: string
+      BRANCH_NAME:
+          description: "Name of the feature branch"
+          required: true
+          type: string
 
     secrets:
       PAT_TOKEN:
@@ -88,6 +92,7 @@ jobs:
           COGNIGY_API_KEY_TEST: ${{ secrets.COGNIGY_API_KEY_TEST }}
           COGNIGY_API_KEY_PROD: ${{ secrets.COGNIGY_API_KEY_PROD }}
           MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
+          BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
           PYTHONUNBUFFERED: 1
         run: |
          
