@@ -239,7 +239,7 @@ except subprocess.CalledProcessError:
 subprocess.run(["git", "pull", remote_name, branch_name], check=True)
 
 # Stage and commit new agent export
-subprocess.run(["git", "add", agent_folder], check=True)
+subprocess.run(["git", "add", "--all"], check=True)  # Stage all changes
 subprocess.run(["git", "commit", "-m", f"Update agent export for {bot_name}"], check=True)
 
 # Push changes to the existing branch
