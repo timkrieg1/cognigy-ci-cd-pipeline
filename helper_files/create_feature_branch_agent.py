@@ -178,16 +178,8 @@ else:
 subprocess.run(["git", "config", "--global", "user.email", user_email], check=True)
 subprocess.run(["git", "config", "--global", "user.name", user_name], check=True)
 
-# Ensure we are on main and up to date
-subprocess.run(["git", "fetch", "--all"], check=True)
-try:
-    subprocess.run(["git", "checkout", "main"], check=True)
-except subprocess.CalledProcessError:
-    print("Branch 'main' not found, trying 'master'...")
-    subprocess.run(["git", "checkout", "master"], check=True)
-subprocess.run(["git", "pull", remote_name, "main"], check=True)
-
-# Create new branch from main
+# Create a new branch directly from the current state or a specific base branch
+branch_name = f"Feature/{bot_name}-{branch_desc.replace(' ', '-')}"
 subprocess.run(["git", "checkout", "-b", branch_name], check=True)
 
 # Stage and commit new agent export and feature_branch_agent_info.json
