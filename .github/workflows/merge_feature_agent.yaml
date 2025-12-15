@@ -43,7 +43,13 @@ jobs:
           repository: ${{ inputs.REPOSITORY }}
           token: ${{ secrets.PAT_TOKEN }}
           path: bot-repo
+          fetch-depth: 0  # Fetch full history to ensure all branches are available
           ref: ${{ inputs.BRANCH_NAME }} # Checkout the feature branch
+
+      - name: Fetch development branch
+        run: |
+          cd bot-repo
+          git fetch origin development:development  # Fetch and create a local tracking branch for development
 
       - name: Set up Python
         uses: actions/setup-python@v4
