@@ -3,11 +3,11 @@ from merge_logic import CognigyMergeClient
 from helper_functions import replace_ids_in_feature_directory
 from dotenv import load_dotenv
 import os
-import sys
 import shutil
 import subprocess
-from datetime import datetime, timezone
 import json
+import sys
+from datetime import datetime, timezone
 import zipfile
 
 # --- Load environment variables ---
@@ -33,6 +33,65 @@ api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
 bot_name = os.getenv("BOT_NAME")
 branch_name = os.getenv("BRANCH_NAME")
 base_branch = os.getenv("BASE_BRANCH")
+
+# --- Prepare directories ---
+merge_base_dir = "merge_base_dir"
+if os.path.exists(merge_base_dir):
+    shutil.rmtree(merge_base_dir)
+os.makedirs(merge_base_dir)
+
+def get_merge_base(base_branch, feature_branch):
+    """
+    Get the merge base (common ancestor commit) between the base branch and the feature branch.
+
+    Args:
+        base_branch (str): The name of the base branch.
+        feature_branch (str): The name of the feature branch.
+
+    Returns:
+        str: The merge base commit hash.
+    """
+    result = subprocess.run(
+        ["git", "merge-base", base_branch, feature_branch],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        check=True
+    )
+    return result.stdout.strip()
+
+def checkout_merge_base(merge_base_commit, target_dir):
+    """
+    Check out the repository at the merge base commit into the target directory.
+
+    Args:
+        merge_base_commit (str): The merge base commit hash.
+        target_dir (str): The directory where the files will be checked out.
+    """
+    subprocess.run(["git", "checkout", merge_base_commit], check=True)
+    subprocess.run(["cp", "-r", ".", target_dir], check=True)
+
+def commit_merge_base_dir(target_dir):
+    """
+    Commit the merge_base_dir to the repository.
+
+    Args:
+        target_dir (str): The directory to commit.
+    """
+    subprocess.run(["git", "add", target_dir], check=True)
+    subprocess.run(["git", "commit", "-m", f"Save merge base directory: {target_dir}"], check=True)
+    print(f"Committed {target_dir} to the repository.")
+
+# --- Get the merge base commit ---
+merge_base_commit = get_merge_base(base_branch, branch_name)
+print(f"Merge base commit: {merge_base_commit}")
+
+# --- Check out the merge base ---
+checkout_merge_base(merge_base_commit, merge_base_dir)
+print(f"Checked out merge base into {merge_base_dir}")
+
+# Commit the merge_base_dir
+commit_merge_base_dir(merge_base_dir)
 
 # --- Prepare agent folder structure ---
 agent_folder = "agent"
@@ -97,6 +156,6 @@ CognigyAPIClientFeature.download_package()
 
 FeatureMergeClient = CognigyMergeClient(
     feature_dir=feature_agent_folder,
-    base_dir=base_branch,
+    base_dir=merge_base_dir,
     main_dir=agent_folder
 )

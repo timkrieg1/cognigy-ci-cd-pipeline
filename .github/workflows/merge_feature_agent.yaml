@@ -19,10 +19,6 @@ on:
         description: "Name of the feature branch"
         required: true
         type: string
-      BASE_BRANCH:
-        description: "Base branch name"
-        required: true
-        type: string
     secrets:
       PAT_TOKEN:
         description: 'GitHub Personal Access Token for creating pull requests'
@@ -66,15 +62,14 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.PAT_TOKEN }}@github.com/${{ inputs.REPOSITORY }}.git
 
-      - name: Execute extract_feature_agent.py
+      - name: Execute merge_feature_agent.py
         env:
           BOT_NAME: ${{ inputs.BOT_NAME }}
           COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
           COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
           BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
-          BASE_BRANCH: ${{ inputs.BASE_BRANCH }}
           PYTHONUNBUFFERED: '1'
         run: |
           # Change to bot repository directory before running the script
           cd bot-repo
-          python ../pipeline-repo/helper_files/extract_feature_agent.py
+          python ../pipeline-repo/helper_files/merge_feature_agent.py
