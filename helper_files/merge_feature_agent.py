@@ -91,13 +91,15 @@ def get_merge_base(base_branch, feature_branch):
             f"Git error: {e.stderr.strip()}"
         )
 
-def checkout_merge_base(merge_base_commit, target_dir):
+def checkout_merge_base(merge_base_commit, target_dir, feature_branch):
     """
-    Check out the repository at the merge base commit and copy the 'agent' folder to the target directory.
+    Check out the repository at the merge base commit, copy the 'agent' folder to the target directory,
+    and switch back to the feature branch.
 
     Args:
         merge_base_commit (str): The merge base commit hash.
         target_dir (str): The directory where the 'agent' folder will be copied.
+        feature_branch (str): The name of the feature branch to switch back to.
     """
     # Check out the repository at the merge base commit
     subprocess.run(["git", "checkout", merge_base_commit], check=True)
@@ -108,11 +110,16 @@ def checkout_merge_base(merge_base_commit, target_dir):
 
     # Copy the 'agent' folder to the target directory
     agent_folder = "agent"
+    base_agent_folder = os.path.join(target_dir, "base_agent")
     if os.path.exists(agent_folder):
-        shutil.copytree(agent_folder, os.path.join(target_dir, agent_folder))
-        print(f"Copied '{agent_folder}' folder to '{target_dir}'.")
+        shutil.copytree(agent_folder, base_agent_folder)
+        print(f"Copied '{agent_folder}' folder to '{base_agent_folder}'.")
     else:
         raise FileNotFoundError(f"The 'agent' folder does not exist at the merge base commit.")
+
+    # Switch back to the feature branch
+    subprocess.run(["git", "checkout", feature_branch], check=True)
+    print(f"Switched back to the feature branch: {feature_branch}")
 
 def commit_merge_base_dir(target_dir):
     """
@@ -129,9 +136,9 @@ def commit_merge_base_dir(target_dir):
 merge_base_commit = get_merge_base("development", branch_name)
 print(f"Merge base commit: {merge_base_commit}")
 
-# --- Check out the merge base ---
-checkout_merge_base(merge_base_commit, merge_base_dir)
-print(f"Checked out merge base into {merge_base_dir}")
+# --- Check out the merge base and retrieve the agent folder ---
+checkout_merge_base(merge_base_commit, merge_base_dir, branch_name)
+print(f"Checked out merge base and saved 'agent' folder to 'base_agent' in {merge_base_dir}")
 
 # Commit the merge_base_dir
 commit_merge_base_dir(merge_base_dir)
