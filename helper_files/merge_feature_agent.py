@@ -38,6 +38,24 @@ if os.path.exists(merge_base_dir):
     shutil.rmtree(merge_base_dir)
 os.makedirs(merge_base_dir)
 
+def branch_exists(branch_name):
+    """
+    Check if a Git branch exists.
+
+    Args:
+        branch_name (str): The name of the branch.
+
+    Returns:
+        bool: True if the branch exists, False otherwise.
+    """
+    result = subprocess.run(
+        ["git", "rev-parse", "--verify", branch_name],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    return result.returncode == 0
+
 def get_merge_base(base_branch, feature_branch):
     """
     Get the merge base (common ancestor commit) between the base branch and the feature branch.
@@ -48,15 +66,30 @@ def get_merge_base(base_branch, feature_branch):
 
     Returns:
         str: The merge base commit hash.
+
+    Raises:
+        ValueError: If one or both branches do not exist.
+        subprocess.CalledProcessError: If the git merge-base command fails.
     """
-    result = subprocess.run(
-        ["git", "merge-base", base_branch, feature_branch],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        check=True
-    )
-    return result.stdout.strip()
+    if not branch_exists(base_branch):
+        raise ValueError(f"Base branch '{base_branch}' does not exist.")
+    if not branch_exists(feature_branch):
+        raise ValueError(f"Feature branch '{feature_branch}' does not exist.")
+
+    try:
+        result = subprocess.run(
+            ["git", "merge-base", base_branch, feature_branch],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"Failed to find merge base between '{base_branch}' and '{feature_branch}'. "
+            f"Git error: {e.stderr.strip()}"
+        )
 
 def checkout_merge_base(merge_base_commit, target_dir):
     """
