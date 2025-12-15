@@ -782,7 +782,7 @@ class CognigyAPIClient:
                         os.makedirs(code_nodes_dir, exist_ok=True)
                         for code_node_name, code_content in code_nodes.items():
                             # --- Sanitize potential path separators in node labels ---
-                            safe_code_node_name = re.sub(r'[\\/]', '_', code_node_name)
+                            safe_code_node_name = re.sub(r'[\\/:\*?"<>|]', '_', code_node_name)
                             code_file_path = os.path.join(code_nodes_dir, f"{safe_code_node_name}.js")
                             with open(code_file_path, "w", encoding="utf-8") as file:
                                 file.write(code_content.replace("\r\n", "\n"))
