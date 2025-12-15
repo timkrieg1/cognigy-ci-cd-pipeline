@@ -108,10 +108,6 @@ CognigyAPIClientDev.extract_agent_resources_by_ids(
     extension_ids=resource_ids.get("extensions", [])
 )
 
-# --- Git branch creation and commit logic ---
-# Replace spaces with hyphens in the branch name
-branch_name = f"{snapshot_name}_Repo_Sync".replace(" ", "-")
-
 # Detect CI/CD environment and configure git/remote dynamically
 if os.getenv("GITHUB_ACTIONS", "").lower() == "true":
     print("Running in GitHub Actions environment.")
