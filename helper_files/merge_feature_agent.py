@@ -18,8 +18,7 @@ required_vars = [
     "COGNIGY_BASE_URL_DEV",
     "COGNIGY_API_KEY_DEV",
     "BOT_NAME",
-    "BRANCH_NAME",
-    "BASE_BRANCH"
+    "BRANCH_NAME"
 ]
 
 # --- Find missing environment variables ---
@@ -32,7 +31,6 @@ base_url_dev = os.getenv("COGNIGY_BASE_URL_DEV")
 api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
 bot_name = os.getenv("BOT_NAME")
 branch_name = os.getenv("BRANCH_NAME")
-base_branch = os.getenv("BASE_BRANCH")
 
 # --- Prepare directories ---
 merge_base_dir = "merge_base_dir"
