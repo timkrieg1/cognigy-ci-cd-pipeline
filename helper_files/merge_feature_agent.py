@@ -81,7 +81,7 @@ def commit_merge_base_dir(target_dir):
     print(f"Committed {target_dir} to the repository.")
 
 # --- Get the merge base commit ---
-merge_base_commit = get_merge_base(base_branch, branch_name)
+merge_base_commit = get_merge_base("development", branch_name)
 print(f"Merge base commit: {merge_base_commit}")
 
 # --- Check out the merge base ---
