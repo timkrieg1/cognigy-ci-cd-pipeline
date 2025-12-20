@@ -25,36 +25,17 @@ class MergeLogic:
         return result.stdout.strip()
 
     def extract_agent(self, source, target_folder):
-        """
-        Extract the 'agent' folder from a specific commit or branch.
-
-        Args:
-            source (str): The commit hash or branch name to extract from.
-            target_folder (str): The folder to save the extracted 'agent' folder.
-        """
-        # Save the current branch
-        current_branch = self.get_current_branch()
-        print(f"[INFO] Current branch before checkout: {current_branch}")
-
-        try:
-            # Checkout the source branch/commit
-            print(f"[INFO] Checking out source: {source}")
-            subprocess.run(["git", "checkout", source], check=True)
-
-            # Restore the 'agent' folder to its state in the specified commit
-            print(f"[INFO] Restoring 'agent' folder from source: {source}")
-            subprocess.run(["git", "restore", "--source", source, "--staged", "--worktree", "agent"], check=True)
-
-            # Ensure the 'agent' folder exists and copy it to the target folder
-            if os.path.exists("agent"):
-                shutil.copytree("agent", target_folder)
-                print(f"[INFO] Copied 'agent' folder from '{source}' to '{target_folder}'.")
-            else:
-                raise FileNotFoundError(f"[ERROR] 'agent' folder does not exist in '{source}'.")
-        finally:
-            # Switch back to the original branch
-            print(f"[INFO] Switching back to the original branch: {current_branch}")
-            subprocess.run(["git", "checkout", current_branch], check=True)
+        """Extract agent folder without changing working directory."""
+        # Use git show to extract files without checkout
+        subprocess.run([
+            "git", "archive", source, "agent/", 
+            "--format=tar", f"--output={target_folder}.tar"
+        ], check=True)
+        
+        # Extract tar to target folder
+        subprocess.run(["tar", "-xf", f"{target_folder}.tar"], check=True)
+        os.rename("agent", target_folder)
+        os.remove(f"{target_folder}.tar")
 
     def create_empty_folder(self, folder_name):
         """
