@@ -108,6 +108,33 @@ CognigyAPIClientFeature.create_package(
 
 CognigyAPIClientFeature.download_package()
 
+# --- Extract all agent ressources by ids ---
+CognigyAPIClientFeature.extract_agent_resources_by_ids(
+    flow_ids=resource_ids.get("flows", []),
+    lexicon_ids=resource_ids.get("lexicons", []),
+    connection_ids=resource_ids.get("connections", []),
+    nlu_connector_ids=resource_ids.get("nluConnectors", []),
+    ai_agent_ids=resource_ids.get("aiagents", []),
+    large_language_model_ids=resource_ids.get("largelanguagemodels", []),
+    knowledge_store_ids=resource_ids.get("knowledgestores", []),
+    function_ids=resource_ids.get("functions", []),
+    locale_ids=resource_ids.get("locales", []),
+    extension_ids=resource_ids.get("extensions", [])
+)
+
+if not resource_ids.get("knowledgestores", []) is None and len(resource_ids.get("knowledgestores", [])) > 0:
+    # --- Download knowledge store package ---
+    knowledge_store_package = CognigyAPIClientFeature.create_package(
+        resource_ids=resource_ids.get("knowledgestores", [])
+    )
+
+    CognigyAPIClientFeature.download_package(knowledge_store=True)
+
+# --- Download snapshot from base environment ---
+snapshot_name = CognigyAPIClientFeature.download_snapshot(
+    release_description="Export Snapshot for Feature Branch Agent."
+)
+
 """ FeatureMergeClient = CognigyMergeClient(
     feature_dir=feature_agent_folder,
     base_dir=merge_base_dir,

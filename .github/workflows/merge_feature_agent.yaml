@@ -46,6 +46,10 @@ jobs:
           fetch-depth: 0  # Fetch full history to ensure all branches are available
           ref: ${{ inputs.BRANCH_NAME }} # Checkout the feature branch
 
+      - name: Disable Git advice messages
+        run: |
+          git config --global advice.detachedHead false
+
       - name: Fetch development branch
         run: |
           cd bot-repo
