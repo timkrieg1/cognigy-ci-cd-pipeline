@@ -45,13 +45,13 @@ class MergeLogic:
 
     def find_original_commit(self):
         """
-        Find the original commit where the feature branch was created.
+        Find the commit where the feature branch was created.
 
         Returns:
-            str: The original commit hash.
+            str: The commit hash of the common ancestor between the feature branch and the parent branch.
         """
         result = subprocess.run(
-            ["git", "rev-list", "--max-parents=0", self.branch_name],
+            ["git", "merge-base", self.branch_name, self.merge_into_branch],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
