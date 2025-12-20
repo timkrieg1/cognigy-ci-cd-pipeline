@@ -18,7 +18,8 @@ required_vars = [
     "COGNIGY_BASE_URL_DEV",
     "COGNIGY_API_KEY_DEV",
     "BOT_NAME",
-    "BRANCH_NAME"
+    "BRANCH_NAME",
+    "MAX_SNAPSHOTS"
 ]
 
 # --- Find missing environment variables ---
@@ -31,6 +32,7 @@ base_url_dev = os.getenv("COGNIGY_BASE_URL_DEV")
 api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
 bot_name = os.getenv("BOT_NAME")
 branch_name = os.getenv("BRANCH_NAME")
+max_snapshots = int(os.getenv("MAX_SNAPSHOTS"))
 merge_into_branch = "development"  # Default branch where the merge is going
 
 # --- Initialize MergeLogic ---
@@ -71,7 +73,7 @@ CognigyAPIClientFeature = CognigyAPIClient(
     locales=None,
     playbook_prefixes=None,
     playbook_flows=None,
-    max_snapshots=None,
+    max_snapshots=max_snapshots,
     folder_name=feature_agent_folder
 )
 

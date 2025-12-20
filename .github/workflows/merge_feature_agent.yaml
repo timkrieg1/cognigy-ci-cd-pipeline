@@ -78,6 +78,7 @@ jobs:
           COGNIGY_BASE_URL_DEV: ${{ inputs.COGNIGY_BASE_URL_DEV }}
           COGNIGY_API_KEY_DEV: ${{ secrets.COGNIGY_API_KEY_DEV }}
           BRANCH_NAME: ${{ inputs.BRANCH_NAME }}
+          MAX_SNAPSHOTS: ${{ inputs.MAX_SNAPSHOTS }}
           PYTHONUNBUFFERED: '1'
         run: |
           # Change to bot repository directory before running the script
