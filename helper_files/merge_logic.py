@@ -15,6 +15,22 @@ class MergeLogic:
             shutil.rmtree(agent_folder)
             print(f"Cleared '{agent_folder}' folder.")
 
+    def get_current_branch(self):
+        """
+        Get the name of the current Git branch.
+
+        Returns:
+            str: The name of the current branch.
+        """
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+
     def extract_agent(self, source, target_folder):
         """
         Extract the 'agent' folder from a specific commit or branch.
@@ -23,12 +39,21 @@ class MergeLogic:
             source (str): The commit hash or branch name to extract from.
             target_folder (str): The folder to save the extracted 'agent' folder.
         """
-        subprocess.run(["git", "checkout", source], check=True)
-        if os.path.exists("agent"):
-            shutil.copytree("agent", target_folder)
-            print(f"Copied 'agent' folder from '{source}' to '{target_folder}'.")
-        else:
-            raise FileNotFoundError(f"'agent' folder does not exist in '{source}'.")
+        # Save the current branch
+        current_branch = self.get_current_branch()
+
+        try:
+            # Checkout the source branch/commit
+            subprocess.run(["git", "checkout", source], check=True)
+            if os.path.exists("agent"):
+                shutil.copytree("agent", target_folder)
+                print(f"Copied 'agent' folder from '{source}' to '{target_folder}'.")
+            else:
+                raise FileNotFoundError(f"'agent' folder does not exist in '{source}'.")
+        finally:
+            # Switch back to the original branch
+            subprocess.run(["git", "checkout", current_branch], check=True)
+            print(f"Switched back to the original branch: '{current_branch}'.")
 
     def create_empty_folder(self, folder_name):
         """
