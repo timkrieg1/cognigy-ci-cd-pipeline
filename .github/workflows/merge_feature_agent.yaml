@@ -19,6 +19,10 @@ on:
         description: "Name of the feature branch"
         required: true
         type: string
+      MAX_SNAPSHOTS:
+        description: "Maximum number of snapshots in env"
+        required: true
+        type: string
     secrets:
       PAT_TOKEN:
         description: 'GitHub Personal Access Token for creating pull requests'
