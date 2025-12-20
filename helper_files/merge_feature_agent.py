@@ -40,7 +40,9 @@ merge_logic = MergeLogic(bot_name, branch_name, merge_into_branch)
 
 # --- Main Logic ---
 # Clear the 'agent' folder
-merge_logic.clear_agent_folder()
+agent_folder = "agent"
+if os.path.exists(agent_folder):
+    shutil.rmtree(agent_folder)
 
 # Extract the 'agent' folder from the original commit to 'base_agent'
 original_commit = merge_logic.find_original_commit()

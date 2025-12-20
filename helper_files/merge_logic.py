@@ -8,13 +8,6 @@ class MergeLogic:
         self.branch_name = branch_name
         self.merge_into_branch = merge_into_branch
 
-    def clear_agent_folder(self):
-        """Clear the 'agent' folder if it exists."""
-        agent_folder = "agent"
-        if os.path.exists(agent_folder):
-            shutil.rmtree(agent_folder)
-            print(f"[INFO] Cleared '{agent_folder}' folder.")
-
     def get_current_branch(self):
         """
         Get the name of the current Git branch.
