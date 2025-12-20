@@ -41,10 +41,22 @@ class MergeLogic:
         """
         # Save the current branch
         current_branch = self.get_current_branch()
+        print(f"Current branch before checkout: {current_branch}")
 
         try:
             # Checkout the source branch/commit
+            print(f"Checking out source: {source}")
             subprocess.run(["git", "checkout", source], check=True)
+
+            # Debug: List files in the working directory
+            print("Files in the working directory after checkout:")
+            subprocess.run(["ls", "-R", "agent"], check=True)
+
+            # Restore the 'agent' folder to its state in the specified commit
+            print(f"Restoring 'agent' folder from source: {source}")
+            subprocess.run(["git", "restore", "--source", source, "--staged", "--worktree", "agent"], check=True)
+
+            # Ensure the 'agent' folder exists and copy it to the target folder
             if os.path.exists("agent"):
                 shutil.copytree("agent", target_folder)
                 print(f"Copied 'agent' folder from '{source}' to '{target_folder}'.")
@@ -52,8 +64,8 @@ class MergeLogic:
                 raise FileNotFoundError(f"'agent' folder does not exist in '{source}'.")
         finally:
             # Switch back to the original branch
+            print(f"Switching back to the original branch: {current_branch}")
             subprocess.run(["git", "checkout", current_branch], check=True)
-            print(f"Switched back to the original branch: '{current_branch}'.")
 
     def create_empty_folder(self, folder_name):
         """
