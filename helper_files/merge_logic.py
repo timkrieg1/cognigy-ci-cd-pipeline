@@ -1,67 +1,60 @@
 import os
-import filecmp
 import shutil
-import zipfile
 import subprocess
 
-class CognigyMergeClient:
-    def __init__(self, feature_dir, base_dir, main_dir):
-        self.feature_dir = feature_dir
-        self.base_dir = base_dir
-        self.main_dir = main_dir
+class MergeLogic:
+    def __init__(self, bot_name, branch_name, merge_into_branch="development"):
+        self.bot_name = bot_name
+        self.branch_name = branch_name
+        self.merge_into_branch = merge_into_branch
 
-        dirs = [self.feature_dir, self.base_dir, self.main_dir]
-        for dir in dirs:
-            if not os.path.exists(dir):
-                raise FileNotFoundError(f"The directory {dir} does not exist.")
-            # Extract the package zip folder
-            self.extract_zip(os.path.join(dir, "package"), os.path.join(dir, "extractedPackage"))
-        
+    def clear_agent_folder(self):
+        """Clear the 'agent' folder if it exists."""
+        agent_folder = "agent"
+        if os.path.exists(agent_folder):
+            shutil.rmtree(agent_folder)
+            print(f"Cleared '{agent_folder}' folder.")
 
-    def extract_zip(self, directory, extract_to):
+    def extract_agent(self, source, target_folder):
         """
-        Finds a single zip file in the directory and extracts it to the specified location.
+        Extract the 'agent' folder from a specific commit or branch.
 
         Args:
-            directory (str): Directory to search for the zip file.
-            extract_to (str): Directory where the contents will be extracted.
+            source (str): The commit hash or branch name to extract from.
+            target_folder (str): The folder to save the extracted 'agent' folder.
         """
-        if not os.path.exists(directory):
-            raise FileNotFoundError(f"The directory {directory} does not exist.")
-        
-        zip_files = [f for f in os.listdir(directory) if f.endswith('.zip')]
-        
-        if len(zip_files) == 0:
-            raise FileNotFoundError("No zip files found in the directory.")
-        elif len(zip_files) > 1:
-            raise ValueError("Multiple zip files found in the directory. Ensure only one zip file is present.")
-        
-        zip_path = os.path.join(directory, zip_files[0])
-        
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-            zip_ref.extractall(extract_to)
-        print(f"Extracted {zip_path} to {extract_to}")
+        subprocess.run(["git", "checkout", source], check=True)
+        if os.path.exists("agent"):
+            shutil.copytree("agent", target_folder)
+            print(f"Copied 'agent' folder from '{source}' to '{target_folder}'.")
+        else:
+            raise FileNotFoundError(f"'agent' folder does not exist in '{source}'.")
 
-
-    # Fetch package folder from the base branch
-    def fetch_package_from_base(base_branch, save_to):
+    def create_empty_folder(self, folder_name):
         """
-        Fetches the package folder from the base branch and saves to a specified directory.
+        Create an empty folder.
 
         Args:
-            base_branch (str): The name of the base branch.
-            save_to (str): Directory where the fetched files will be saved.
+            folder_name (str): The name of the folder to create.
         """
-        if not os.path.exists(save_to):
-            os.makedirs(save_to)
+        if os.path.exists(folder_name):
+            shutil.rmtree(folder_name)
+        os.makedirs(folder_name)
+        print(f"Created empty folder '{folder_name}'.")
 
-        try:
-            subprocess.run(["git", "checkout", base_branch, "--", "package"], check=True)
-            print(f"Fetched package folder from {base_branch}")
-            # Copy the fetched file to the save_to directory
-            shutil.copy("package", save_to)
-            print(f"Saved package folder to {save_to}")
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to fetch package folder from {base_branch}: {e}")
-        except FileNotFoundError as e:
-            print(f"Failed to save package folder to {save_to}: {e}")
+
+    def find_original_commit(self):
+        """
+        Find the original commit where the feature branch was created.
+
+        Returns:
+            str: The original commit hash.
+        """
+        result = subprocess.run(
+            ["git", "rev-list", "--max-parents=0", self.branch_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()

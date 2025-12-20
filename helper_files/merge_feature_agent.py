@@ -1,5 +1,5 @@
 from cognigy_client import CognigyAPIClient
-from merge_logic import CognigyMergeClient
+from merge_logic import MergeLogic
 from helper_functions import replace_ids_in_feature_directory
 from dotenv import load_dotenv
 import os
@@ -31,120 +31,24 @@ base_url_dev = os.getenv("COGNIGY_BASE_URL_DEV")
 api_key_dev = os.getenv("COGNIGY_API_KEY_DEV")
 bot_name = os.getenv("BOT_NAME")
 branch_name = os.getenv("BRANCH_NAME")
+merge_into_branch = "development"  # Default branch where the merge is going
 
-# --- Prepare directories ---
-merge_base_dir = "merge_base_dir"
-if os.path.exists(merge_base_dir):
-    shutil.rmtree(merge_base_dir)
-os.makedirs(merge_base_dir)
+# --- Initialize MergeLogic ---
+merge_logic = MergeLogic(bot_name, branch_name, merge_into_branch)
 
-def branch_exists(branch_name):
-    """
-    Check if a Git branch exists.
+# --- Main Logic ---
+# Clear the 'agent' folder
+merge_logic.clear_agent_folder()
 
-    Args:
-        branch_name (str): The name of the branch.
+# Extract the 'agent' folder from the original commit to 'base_agent'
+original_commit = merge_logic.find_original_commit()
+merge_logic.extract_agent(original_commit, "base_agent")
 
-    Returns:
-        bool: True if the branch exists, False otherwise.
-    """
-    result = subprocess.run(
-        ["git", "rev-parse", "--verify", branch_name],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-    return result.returncode == 0
+# Extract the 'agent' folder from the 'development' branch to 'dev_agent'
+merge_logic.extract_agent(merge_into_branch, "dev_agent")
 
-def get_merge_base(base_branch, feature_branch):
-    """
-    Get the merge base (common ancestor commit) between the base branch and the feature branch.
-
-    Args:
-        base_branch (str): The name of the base branch.
-        feature_branch (str): The name of the feature branch.
-
-    Returns:
-        str: The merge base commit hash.
-
-    Raises:
-        ValueError: If one or both branches do not exist.
-        subprocess.CalledProcessError: If the git merge-base command fails.
-    """
-    if not branch_exists(base_branch):
-        raise ValueError(f"Base branch '{base_branch}' does not exist.")
-    if not branch_exists(feature_branch):
-        raise ValueError(f"Feature branch '{feature_branch}' does not exist.")
-
-    try:
-        result = subprocess.run(
-            ["git", "merge-base", base_branch, feature_branch],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            check=True
-        )
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(
-            f"Failed to find merge base between '{base_branch}' and '{feature_branch}'. "
-            f"Git error: {e.stderr.strip()}"
-        )
-
-def checkout_merge_base(merge_base_commit, target_dir, feature_branch):
-    """
-    Check out the repository at the merge base commit, copy the 'agent' folder to the target directory,
-    and switch back to the feature branch.
-
-    Args:
-        merge_base_commit (str): The merge base commit hash.
-        target_dir (str): The directory where the 'agent' folder will be copied.
-        feature_branch (str): The name of the feature branch to switch back to.
-    """
-    # Check out the repository at the merge base commit
-    subprocess.run(["git", "checkout", merge_base_commit], check=True)
-
-    # Ensure the target directory exists
-    if not os.path.exists(target_dir):
-        os.makedirs(target_dir)
-
-    # Copy the 'agent' folder to the target directory
-    agent_folder = "agent"
-    base_agent_folder = os.path.join(target_dir, "base_agent")
-    if os.path.exists(agent_folder):
-        shutil.copytree(agent_folder, base_agent_folder)
-        print(f"Copied '{agent_folder}' folder to '{base_agent_folder}'.")
-    else:
-        raise FileNotFoundError(f"The 'agent' folder does not exist at the merge base commit.")
-
-    # Switch back to the feature branch
-    subprocess.run(["git", "checkout", feature_branch], check=True)
-    print(f"Switched back to the feature branch: {feature_branch}")
-
-def commit_merge_base_dir(target_dir):
-    """
-    Commit the merge_base_dir to the repository.
-
-    Args:
-        target_dir (str): The directory to commit.
-    """
-    subprocess.run(["git", "add", target_dir], check=True)
-    subprocess.run(["git", "commit", "-m", f"Save merge base directory: {target_dir}"], check=True)
-    print(f"Committed {target_dir} to the repository.")
-
-# --- Get the merge base commit ---
-merge_base_commit = get_merge_base("development", branch_name)
-print(f"Merge base commit: {merge_base_commit}")
-
-# --- Check out the merge base and retrieve the agent folder ---
-checkout_merge_base(merge_base_commit, merge_base_dir, branch_name)
-print(f"Checked out merge base and saved 'agent' folder to 'base_agent' in {merge_base_dir}")
-
-# Commit the merge_base_dir
-commit_merge_base_dir(merge_base_dir)
 
 # --- Prepare agent folder structure ---
-agent_folder = "agent"
 feature_agent_folder = "feature_agent"
 if os.path.exists(feature_agent_folder):
     shutil.rmtree(feature_agent_folder)
